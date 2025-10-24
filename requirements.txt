@@ -1,0 +1,20 @@
+# Core AI Framework
+langchain
+langchain-openai
+langchain_community
+
+# LLM & API
+openai-whisper
+
+# File Loaders
+pypdf
+
+# Databases
+chromadb
+psycopg2-binary
+
+# Frontend
+streamlit
+
+# Utilities
+python-dotenv
