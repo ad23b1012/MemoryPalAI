@@ -1,0 +1,11 @@
+fastapi==0.102.0
+uvicorn[standard]==0.23.2
+httpx==0.24.1
+python-dotenv==1.0.1
+PyPDF2==3.0.1
+python-docx
+beautifulsoup4==4.12.2
+langchain
+sentence-transformers
+pinecone-client==2.2.1
+google-genai
