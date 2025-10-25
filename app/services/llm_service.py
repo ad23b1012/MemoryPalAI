@@ -1,55 +1,67 @@
-# app/services/llm_service.py
 import os
 import httpx
+import asyncio
 from dotenv import load_dotenv
 
+# Load environment variables from .env file
 load_dotenv()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-GROK_MODEL = os.getenv("GROK_MODEL", "grok-1")  # Default Grok model
-GROK_API_URL = "https://api.together.xyz/v1/engines"
-
-if not GROQ_API_KEY:
-    raise ValueError("Please set your GROQ_API_KEY in .env file")
+# Get Gemini API credentials
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
-class GrokClient:
-    def __init__(self, model: str = GROK_MODEL):
+class GeminiLLM:
+    """Simple async client for Google Gemini API."""
+
+    def __init__(self, api_key: str, model: str):
+        if not api_key:
+            raise ValueError("❌ Missing GEMINI_API_KEY in environment variables.")
+        self.api_key = api_key
         self.model = model
-        self.headers = {
-            "Authorization": f"Bearer {GROQ_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        self.url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{self.model}:generateContent"
+        )
 
-    async def ask(self, prompt: str, max_tokens: int = 512, temperature: float = 0.1) -> str:
+    async def ask(
+        self, prompt: str, temperature: float = 0.3, max_output_tokens: int = 512
+    ) -> str:
+        """Send a prompt to Gemini and return its text response."""
+        headers = {"Content-Type": "application/json"}
+
         payload = {
-            "model": self.model,
-            "input": prompt,
-            "max_output_tokens": max_tokens,
-            "temperature": temperature
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_output_tokens,
+            },
         }
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(f"{GROK_API_URL}/{self.model}/completions",
-                                         headers=self.headers,
-                                         json=payload)
+            # ✅ Gemini API uses API key as query param (not Bearer token)
+            response = await client.post(
+                f"{self.url}?key={self.api_key}",
+                headers=headers,
+                json=payload,
+            )
             response.raise_for_status()
-            result = response.json()
-            # Grok returns text in result['output_text'] or similar
-            return result.get("output_text", "").strip()
+            data = response.json()
+
+            # ✅ Safely extract text response
+            try:
+                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+            except (KeyError, IndexError):
+                return f"⚠️ Unexpected response format: {data}"
 
 
-# Instantiate a global Grok client
-grok = GrokClient()
-
-
-# ----------------- Test -----------------
+# ----------------- TEST SECTION -----------------
 if __name__ == "__main__":
-    import asyncio
+    async def test_llm():
+        print("🔍 Testing Gemini LLM Service...\n")
+        llm = GeminiLLM(GEMINI_API_KEY, GEMINI_MODEL)
+        response = await llm.ask("Explain what an AVL tree is in 3 sentences.")
+        print("✅ Response from Gemini:\n")
+        print(response)
 
-    async def test():
-        prompt = "Explain the concept of AVL trees in 2 sentences."
-        answer = await grok.ask(prompt)
-        print("Grok Response:\n", answer)
-
-    asyncio.run(test())
+    asyncio.run(test_llm())
