@@ -5,6 +5,7 @@ langchain_community
 
 # LLM & API
 openai-whisper
+sentence-transformers
 
 # File Loaders
 pypdf
