@@ -1,2 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+
+# Environment
 .env
-.env.*
+venv/
+
+# VectorDB Data
+chroma_db/

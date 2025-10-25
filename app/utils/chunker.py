@@ -1,29 +1,26 @@
-# app/utils/chunker.py
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 100
-
-def chunk_text(text: str) -> list[str]:
+def chunk_documents(documents: list[Document], chunk_size=1000, chunk_overlap=100) -> list[Document]:
     """
-    Split text into smaller chunks using RecursiveCharacterTextSplitter
+    Splits a list of LangChain documents into smaller chunks.
     """
-    splitter = RecursiveCharacterTextSplitter(
-        chunk_size=CHUNK_SIZE,
-        chunk_overlap=CHUNK_OVERLAP,
-        separators=["\n\n", "\n", ".", " ", ""]
+    print(f"Chunking {len(documents)} document(s)...")
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len, # Use standard character length
     )
-    return splitter.split_text(text)
+    split_docs = text_splitter.split_documents(documents)
+    print(f"✅ Documents split into {len(split_docs)} chunks.")
+    return split_docs
 
-
-# ----------------- Test -----------------
 if __name__ == "__main__":
-    sample_text = (
-        "MemoryPalAI is an Agentic AI-powered second brain. "
-        "It ingests notes, PDFs, audio, and bookmarks, organizes them, "
-        "retrieves information, and builds learning roadmaps."
-    )
-    chunks = chunk_text(sample_text)
-    print(f"Number of chunks: {len(chunks)}")
-    for i, c in enumerate(chunks):
-        print(f"\n--- Chunk {i+1} ---\n{c}")
+    # Test block for the chunker
+    print("--- Testing Chunker Utility ---")
+    # Create a dummy long document
+    long_text = "This is sentence one. " * 300 # Approx 1500 chars
+    test_doc = Document(page_content=long_text, metadata={"source": "test"})
+    chunks = chunk_documents([test_doc])
+    print(f"First chunk content preview: '{chunks[0].page_content[:100]}...'")
+    print(f"Number of chunks created: {len(chunks)}")

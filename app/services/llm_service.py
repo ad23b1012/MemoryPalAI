@@ -1,67 +1,32 @@
-import os
-import httpx
-import asyncio
-from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+# Import the key using the name you prefer
+from app.config import DEEPSEEK_API_KEY 
 
-# Load environment variables from .env file
-load_dotenv()
+def get_llm():
+    """
+    Initializes and returns the ChatOpenAI client configured for OpenRouter,
+    using the key stored under DEEPSEEK_API_KEY.
+    """
+    if not DEEPSEEK_API_KEY:
+        raise ValueError("DEEPSEEK_API_KEY not found. Please check your .env file.")
 
-# Get Gemini API credentials
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+    llm = ChatOpenAI(
+        # The correct model ID you found
+        model="tngtech/deepseek-r1t2-chimera:free", 
+        # The OpenRouter endpoint
+        base_url="https://openrouter.ai/api/v1",  
+        # Pass the key value, regardless of the variable name
+        api_key=DEEPSEEK_API_KEY              
+    )
+    print("✅ LLM Service initialized with OpenRouter (using DEEPSEEK_API_KEY var).")
+    return llm
 
-
-class GeminiLLM:
-    """Simple async client for Google Gemini API."""
-
-    def __init__(self, api_key: str, model: str):
-        if not api_key:
-            raise ValueError("❌ Missing GEMINI_API_KEY in environment variables.")
-        self.api_key = api_key
-        self.model = model
-        self.url = (
-            f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{self.model}:generateContent"
-        )
-
-    async def ask(
-        self, prompt: str, temperature: float = 0.3, max_output_tokens: int = 512
-    ) -> str:
-        """Send a prompt to Gemini and return its text response."""
-        headers = {"Content-Type": "application/json"}
-
-        payload = {
-            "contents": [{"parts": [{"text": prompt}]}],
-            "generationConfig": {
-                "temperature": temperature,
-                "maxOutputTokens": max_output_tokens,
-            },
-        }
-
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # ✅ Gemini API uses API key as query param (not Bearer token)
-            response = await client.post(
-                f"{self.url}?key={self.api_key}",
-                headers=headers,
-                json=payload,
-            )
-            response.raise_for_status()
-            data = response.json()
-
-            # ✅ Safely extract text response
-            try:
-                return data["candidates"][0]["content"]["parts"][0]["text"].strip()
-            except (KeyError, IndexError):
-                return f"⚠️ Unexpected response format: {data}"
-
-
-# ----------------- TEST SECTION -----------------
 if __name__ == "__main__":
-    async def test_llm():
-        print("🔍 Testing Gemini LLM Service...\n")
-        llm = GeminiLLM(GEMINI_API_KEY, GEMINI_MODEL)
-        response = await llm.ask("Explain what an AVL tree is in 3 sentences.")
-        print("✅ Response from Gemini:\n")
-        print(response)
-
-    asyncio.run(test_llm())
+    # Test block to verify the LLM connection
+    try:
+        llm = get_llm()
+        print("--- Testing LLM Service ---")
+        response = llm.invoke("Hello, who are you?")
+        print(f"LLM Response: {response.content}")
+    except Exception as e:
+        print(f"❌ Error testing LLM Service: {e}")
