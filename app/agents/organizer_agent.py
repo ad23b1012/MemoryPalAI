@@ -1,82 +1,103 @@
-# Import the LLM service we just built
-from app.services.llm_service import get_llm 
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import JsonOutputParser
+import time
 import json
+from app.services.llm_service import get_llm, generate_with_retry
 
 class OrganizerAgent:
     """
-    An agent that analyzes text to extract entities and relationships
-    to build a knowledge graph.
+    Extracts entities and relationships safely using Gemini 2.5 Flash.
+    Includes retries, chunking, fallback graphs, and context isolation.
     """
+
     def __init__(self):
-        # Get the LLM instance from our service
-        self.llm = get_llm() 
-        print("✅ OrganizerAgent initialized.")
+        self.llm = get_llm("gemini-2.5-flash")
+        print("✅ OrganizerAgent initialized with Gemini-2.5-flash.")
 
     def extract_graph_data(self, text: str):
+        """Main graph extraction with retry logic."""
+        print("\n🚀 OrganizerAgent: extracting entities and relationships...")
+
+        if not text or len(text.strip()) == 0:
+            print("⚠️ Empty text provided — returning default graph.")
+            return self._default_graph()
+
+        chunks = self._split_text(text, max_chunk_size=3000)
+        merged_graph = self._default_graph()
+
+        for idx, chunk in enumerate(chunks):
+            print(f"🧩 Processing chunk {idx + 1}/{len(chunks)} (length={len(chunk)} chars)")
+            for attempt in range(3):
+                try:
+                    sub_graph = self._process_chunk(chunk)
+                    if sub_graph:
+                        merged_graph = self._merge_graphs(merged_graph, sub_graph)
+                    break
+                except Exception as e:
+                    print(f"⚠️ Chunk {idx + 1} attempt {attempt + 1} failed: {e}")
+                    if attempt < 2:
+                        time.sleep((attempt + 1) * 3)
+                    else:
+                        print(f"❌ Failed to process chunk {idx + 1} after 3 attempts.")
+        print("✅ Graph extraction complete.")
+        return merged_graph
+
+    def _process_chunk(self, chunk: str):
+        """Process a single chunk through Gemini with enforced JSON output."""
+        prompt = f"""
+        You are MemoryPalAI's Organizer Agent.
+
+        Analyze the provided text and extract structured knowledge strictly in JSON format.
+        Identify key entities (nodes) and relationships (edges) **only** from the text.
+
+        Output must be valid JSON like:
+        {{
+          "nodes": [{{"id": "EntityName", "type": "Type"}}],
+          "edges": [{{"source": "EntityName1", "target": "EntityName2", "label": "relationship"}}]
+        }}
+
+        Text:
+        {chunk}
         """
-        Uses an LLM to extract nodes (entities) and edges (relationships) from text.
-        """
-        print("\n🚀 Organizer Agent: Analyzing text to extract graph data...")
-
-        # The parser will ensure the LLM's output is valid JSON.
-        parser = JsonOutputParser()
-
-        # A detailed prompt that instructs the LLM to return a JSON object
-        # with 'nodes' (entities) and 'edges' (relationships).
-        prompt = ChatPromptTemplate.from_template(
-            """
-            You are an expert at creating knowledge graphs from text.
-            Analyze the following text and extract the key entities as nodes and the relationships between them as edges.
-
-            RULES:
-            - Nodes must have an 'id' (a unique name) and a 'type' (e.g., 'Person', 'Concept', 'Organization', 'Date', 'Location').
-            - Edges must have a 'source' id, a 'target' id, and a 'label' describing their relationship (e.g., 'affiliated with', 'presented about', 'located in', 'mentioned on').
-            - Only extract relationships explicitly mentioned or strongly implied in the text.
-
-            TEXT:
-            {text_input}
-
-            {format_instructions}
-            """
-        )
-
-        # Create the chain that links the prompt, LLM, and parser.
-        chain = prompt | self.llm | parser
 
         try:
-            graph_data = chain.invoke({
-                "text_input": text,
-                "format_instructions": parser.get_format_instructions(),
-            })
-            print("✅ Organizer Agent: Successfully extracted graph data.")
-            return graph_data
+            response_text = generate_with_retry(self.llm, prompt)
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            print("⚠️ Failed to parse JSON, returning empty subgraph.")
+            return {"nodes": [], "edges": []}
         except Exception as e:
-            print(f"❌ Organizer Agent: Failed to extract data. Error: {e}")
-            return None
+            print(f"❌ Error during chunk processing: {e}")
+            return {"nodes": [], "edges": []}
+
+    def _split_text(self, text: str, max_chunk_size: int = 3000):
+        """Split text into manageable overlapping chunks."""
+        chunks, step = [], max_chunk_size - 500
+        for i in range(0, len(text), step):
+            chunks.append(text[i:i + max_chunk_size])
+        return chunks
+
+    def _merge_graphs(self, main_graph, new_graph):
+        """Merge multiple partial graphs without duplication."""
+        node_ids = {node["id"] for node in main_graph["nodes"]}
+        for node in new_graph.get("nodes", []):
+            if node.get("id") not in node_ids:
+                main_graph["nodes"].append(node)
+                node_ids.add(node["id"])
+
+        for edge in new_graph.get("edges", []):
+            if edge not in main_graph["edges"]:
+                main_graph["edges"].append(edge)
+        return main_graph
+
+    def _default_graph(self):
+        """Return a safe fallback graph if LLM extraction fails."""
+        return {
+            "nodes": [{"id": "Document", "type": "Text"}],
+            "edges": []
+        }
+
 
 if __name__ == "__main__":
-    # This block allows us to run this file directly to test it.
-    print("--- Testing OrganizerAgent ---")
-    
-    organizer = OrganizerAgent()
-
-    # Let's use the sample text from the PDF we tested earlier
-    test_text = """
-    Overview of AI and Generative AI
-    Dr. Sunil Saumya
-    Dept of Data Science & Artificial Intelligence
-    Indian Institute of Information Technology Dharwad
-    sunilsaumya @iiitdwd.ac.in
-    August 6, 2025
-    Dr. Sunil Saumya (IIIT Dharwad) Agentic AI August 6, 2025 1 / 32
-    """
-
-    knowledge_graph_data = organizer.extract_graph_data(test_text)
-
-    if knowledge_graph_data:
-        print("\n--- Extracted Knowledge Graph ---")
-        # Pretty-print the JSON output
-        print(json.dumps(knowledge_graph_data, indent=2))
-        print("---------------------------------")
+    agent = OrganizerAgent()
+    test_text = "AI involves Machine Learning and Deep Learning."
+    graph = agent.extract_graph_data(test_text)
+    print(json.dumps(graph, indent=2))

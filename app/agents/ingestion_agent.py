@@ -1,68 +1,86 @@
+# app/agents/ingestion_agent.py
 import os
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_core.documents import Document
-from app.services.audio_service import transcribe_audio # Import our new service
+from app.services.audio_service import transcribe_audio
+
 
 class IngestionAgent:
     """
-    An agent responsible for ingesting data from various sources.
-    It detects the file type and uses the appropriate loader or model.
+    Ingests documents from TXT, PDF, or audio files.
+    Audio files are transcribed using Whisper.
     """
+
     def __init__(self):
         print("✅ IngestionAgent initialized.")
-        # We don't need to load the model here anymore
 
     def ingest(self, file_path: str):
         """
-        Loads a document from a file path and extracts its content.
-        For audio files, it transcribes them to text.
+        Loads a document from the given file path.
+        Handles text, PDF, and audio files (mp3, wav, m4a, mpeg).
+        Returns a list of LangChain Document objects or None on failure.
         """
-        _, file_extension = os.path.splitext(file_path)
-        print(f"\n🚀 Ingestion Agent: Processing file '{file_path}'...")
-
-        # Define supported audio extensions
-        audio_extensions = ['.mp3', '.m4a', '.wav', '.mpeg']
-
-        if file_extension.lower() == '.txt':
-            loader = TextLoader(file_path)
-            documents = loader.load()
-        elif file_extension.lower() == '.pdf':
-            loader = PyPDFLoader(file_path)
-            documents = loader.load()
-        elif file_extension.lower() in audio_extensions:
-            # --- Use our dedicated audio service ---
-            print("🔊 Audio file detected. Calling AudioService...")
-            transcribed_text = transcribe_audio(file_path)
-            
-            if "Error:" in transcribed_text:
-                print(f"❌ Ingestion Agent: {transcribed_text}")
-                return None
-                
-            metadata = {"source": file_path}
-            documents = [Document(page_content=transcribed_text, metadata=metadata)]
-        else:
-            print(f"⚠️ Ingestion Agent: File type '{file_extension}' not supported.")
+        # ---------- Input Validation ----------
+        if not file_path or not os.path.exists(file_path):
+            print(f"❌ Invalid or missing file path: {file_path}")
             return None
 
-        print(f"✅ Ingestion Agent: Successfully processed content.")
-        return documents
+        _, ext = os.path.splitext(file_path.lower())
+        print(f"🚀 IngestionAgent: processing file '{file_path}'")
 
+        audio_exts = ['.mp3', '.m4a', '.wav', '.mpeg']
+
+        try:
+            # ---------- TXT Files ----------
+            if ext == ".txt":
+                loader = TextLoader(file_path)
+                docs = loader.load()
+
+            # ---------- PDF Files ----------
+            elif ext == ".pdf":
+                loader = PyPDFLoader(file_path)
+                docs = loader.load()
+
+            # ---------- Audio Files ----------
+            elif ext in audio_exts:
+                print("🎧 Audio file detected — transcribing via Whisper...")
+                transcribed_text = transcribe_audio(file_path)
+
+                if not transcribed_text or "Error" in transcribed_text:
+                    print(f"❌ Transcription failed for: {file_path}")
+                    return None
+
+                docs = [Document(page_content=transcribed_text, metadata={"source": file_path})]
+
+            # ---------- Unsupported ----------
+            else:
+                print(f"⚠️ Unsupported file type: {ext}")
+                return None
+
+            print(f"✅ Ingestion complete. Processed {len(docs)} document(s).")
+            return docs
+
+        except Exception as e:
+            print(f"❌ Error during ingestion: {e}")
+            return None
+
+
+# ---------------- Test Block ----------------
 if __name__ == "__main__":
-    # This block allows us to run this file directly to test it.
-    
-    # --- Create a dummy file for testing ---
-    test_file_path = "test_note.txt"
-    with open(test_file_path, "w") as f:
-        f.write("This is a test note.")
-    
-    print("--- Testing IngestionAgent with .txt file ---")
+    # Create a small test file to verify ingestion logic
+    test_path = "test_note.txt"
+    with open(test_path, "w") as f:
+        f.write("Artificial Intelligence enables machines to think and learn like humans.")
+
     agent = IngestionAgent()
-    docs = agent.ingest(test_file_path)
-    
-    if docs:
-        print("\n--- Ingested Content ---")
-        print(docs[0].page_content)
-        print("------------------------")
-    
-    # Clean up the dummy file
-    os.remove(test_file_path)
+    result = agent.ingest(test_path)
+
+    if result:
+        print("\n--- Ingested Document Content ---")
+        print(result[0].page_content)
+        print("-------------------------------")
+    else:
+        print("❌ Ingestion failed.")
+
+    # Clean up
+    os.remove(test_path)

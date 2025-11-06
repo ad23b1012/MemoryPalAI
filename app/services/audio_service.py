@@ -1,39 +1,51 @@
+# app/services/audio_service.py
 import whisper
 import os
 
-# Load the model once when the service is imported
-# 'base' is a good balance of speed and accuracy
+# -----------------------------
+# Load Whisper model globally
+# -----------------------------
 try:
-    model = whisper.load_model("base")
-    print("Whisper model loaded successfully.")
+    model = whisper.load_model("base")  # use "tiny" for faster tests
+    print("✅ Whisper model loaded successfully.")
 except Exception as e:
-    print(f"Error loading Whisper model: {e}")
+    print(f"❌ Error loading Whisper model: {e}")
     model = None
 
+
+# -----------------------------
+# Transcription Function
+# -----------------------------
 def transcribe_audio(file_path: str) -> str:
     """
     Transcribes an audio file using the Whisper model.
     """
     if model is None:
-        return "Error: Whisper model is not loaded."
-        
-    print(f"Transcribing audio file: {file_path}...")
+        return "❌ Error: Whisper model not loaded."
+
+    if not os.path.exists(file_path):
+        return f"❌ Error: File not found at {file_path}"
+
+    print(f"🎧 Transcribing audio file: {file_path}...")
     try:
-        # We need to copy the file to a local path without spaces
-        # because ffmpeg (used by Whisper) can have issues with spaces
-        temp_audio_path = "/tmp/temp_audio_for_transcription"
-        
-        # In a real app, you'd handle different file extensions
-        # For now, let's assume the file has a proper extension
-        
-        # A simple copy (in a production app, you'd handle this more robustly)
-        # For local files, this is less of an issue, but for GDrive paths it was
-        # Let's try to transcribe directly first.
         result = model.transcribe(file_path)
-        transcribed_text = result['text']
+        text = result.get("text", "").strip()
         print("✅ Audio transcribed successfully.")
-        return transcribed_text
-        
+        return text if text else "⚠️ No speech detected in audio."
     except Exception as e:
         print(f"❌ Error during transcription: {e}")
         return f"Error transcribing audio: {e}"
+
+
+# -----------------------------
+# Test Code (Run Directly)
+# -----------------------------
+if __name__ == "__main__":
+    test_audio_path = "/Users/abhi/Desktop/Agentic/MemoryPalAI/tests/test.m4a"  # change if needed
+
+    print("🚀 Running Whisper Transcription Test...\n")
+    output_text = transcribe_audio(test_audio_path)
+
+    print("\n--- Transcription Output ---")
+    print(output_text)
+    print("\n✅ Test Completed.")

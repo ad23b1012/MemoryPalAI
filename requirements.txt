@@ -1,8 +1,4 @@
-# Core AI Framework
-langchain
-langchain-openai
-langchain_community
-
+streamlit
 # LLM & API
 openai-whisper
 sentence-transformers
@@ -19,3 +15,16 @@ streamlit
 
 # Utilities
 python-dotenv
+reportlab
+langchain-chroma
+
+openai-whisper
+ffmpeg-python==0.2.0
+google-generativeai
+langgraph
+langchain
+google-generativeai
+langchain-google-genai
+langchain-community
+networkx
+pyvis

@@ -1,32 +1,61 @@
-from langchain_openai import ChatOpenAI
-# Import the key using the name you prefer
-from app.config import DEEPSEEK_API_KEY 
+import os
+import time
+import google.generativeai as genai
+from dotenv import load_dotenv
 
-def get_llm():
-    """
-    Initializes and returns the ChatOpenAI client configured for OpenRouter,
-    using the key stored under DEEPSEEK_API_KEY.
-    """
-    if not DEEPSEEK_API_KEY:
-        raise ValueError("DEEPSEEK_API_KEY not found. Please check your .env file.")
+# Load environment variables from .env file
+load_dotenv()
 
-    llm = ChatOpenAI(
-        # The correct model ID you found
-        model="tngtech/deepseek-r1t2-chimera:free", 
-        # The OpenRouter endpoint
-        base_url="https://openrouter.ai/api/v1",  
-        # Pass the key value, regardless of the variable name
-        api_key=DEEPSEEK_API_KEY              
-    )
-    print("✅ LLM Service initialized with OpenRouter (using DEEPSEEK_API_KEY var).")
-    return llm
+def get_llm(model_name="gemini-2.5-flash"):
+    """Initialize Gemini safely with retries and proper API configuration."""
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("❌ Missing GOOGLE_API_KEY environment variable.")
 
-if __name__ == "__main__":
-    # Test block to verify the LLM connection
+    genai.configure(api_key=api_key)
+
     try:
-        llm = get_llm()
-        print("--- Testing LLM Service ---")
-        response = llm.invoke("Hello, who are you?")
-        print(f"LLM Response: {response.content}")
+        llm = genai.GenerativeModel(model_name)
+        print(f"✅ Gemini LLM initialized ({model_name})")
+        return llm
     except Exception as e:
-        print(f"❌ Error testing LLM Service: {e}")
+        print(f"❌ Failed to initialize Gemini model: {e}")
+        raise
+
+
+def extract_gemini_text(response):
+    """Safely extract text from Gemini responses, even if multi-part."""
+    try:
+        if hasattr(response, "text") and response.text:
+            return response.text.strip()
+        if hasattr(response, "candidates") and response.candidates:
+            parts = response.candidates[0].content.parts
+            return "\n".join(
+                [p.text.strip() for p in parts if hasattr(p, "text") and p.text]
+            )
+        return str(response)
+    except Exception:
+        return str(response)
+
+
+def generate_with_retry(llm, prompt: str, retries: int = 3, delay: int = 3):
+    """
+    Generate Gemini responses safely with retry logic and proper generation_config.
+    Returns clean text output.
+    """
+    for attempt in range(1, retries + 1):
+        try:
+            response = llm.generate_content(
+                prompt,
+                generation_config={
+                    "temperature": 0.2,
+                    "max_output_tokens": 512,
+                }
+            )
+            return extract_gemini_text(response)
+        except Exception as e:
+            print(f"⚠️ Gemini call failed (attempt {attempt}): {e}")
+            if attempt < retries:
+                time.sleep(delay)
+            else:
+                raise

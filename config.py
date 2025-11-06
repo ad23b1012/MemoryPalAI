@@ -16,7 +16,7 @@ class Settings:
     VECTOR_DIMENSION: int = int(os.getenv("VECTOR_DIMENSION", 384))
 
     # LLM Settings
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY")
+    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY")
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY")
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4")  # can switch to Gemini/Grok
 
