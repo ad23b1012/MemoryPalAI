@@ -1,4 +1,3 @@
-# frontend/streamlit_app.py
 import sys
 import os
 import tempfile
@@ -12,7 +11,6 @@ from app.agents.retriever_agent import RetrieverAgent
 from components.session_manager import SessionManager
 from components.graph_view import render_knowledge_graph
 
-
 # -----------------------
 # STREAMLIT CONFIG
 # -----------------------
@@ -22,9 +20,9 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-st.title("🧠 MemoryPalAI — Intelligent Knowledge Workspace")
+st.title("🧠 MemoryPalAI — Intelligent Adaptive Learning System")
 st.markdown(
-    "Upload documents or audio, extract structured knowledge, and build personalized learning roadmaps with **Gemini 2.5 Flash + LangGraph + Whisper + ChromaDB**."
+    "Upload documents, extract structured knowledge, and get a **personalized adaptive learning plan** with quizzes, all powered by **Gemini 2.5 Flash + LangGraph + Whisper + ChromaDB**."
 )
 
 # -----------------------
@@ -41,15 +39,13 @@ if "retriever" not in st.session_state:
 if "history" not in st.session_state:
     st.session_state.history = []
 
-
 # -----------------------
 # MAIN INTERFACE
 # -----------------------
-col1, col2 = st.columns([1.6, 1])
+col1, col2 = st.columns([1.7, 1])
 
 with col1:
     st.header("📤 Upload a File")
-
     uploaded_file = st.file_uploader(
         "Choose a text, PDF, or audio file",
         type=["txt", "pdf", "mp3", "m4a", "wav"],
@@ -61,7 +57,6 @@ with col1:
         file_path = os.path.join(temp_dir, uploaded_file.name)
         with open(file_path, "wb") as f:
             f.write(uploaded_file.getvalue())
-
         session.add_file(file_path)
         st.success(f"✅ Uploaded: `{uploaded_file.name}`")
 
@@ -89,7 +84,7 @@ with col1:
                 user_goal=user_goal or "Learn effectively"
             )
 
-            with st.spinner("🤖 Processing your file and query... this may take a moment ⏳"):
+            with st.spinner("🤖 Processing your file and generating roadmap..."):
                 compiled_graph = st.session_state.graph
                 result_state = compiled_graph.invoke(state)
 
@@ -97,20 +92,23 @@ with col1:
                 st.session_state.history.append({
                     "query": query,
                     "response": result_state.get("answer", "❌ No response generated."),
-                    "plan": result_state.get("plan", "❌ No plan generated.")
+                    "plan": result_state.get("plan", "❌ No plan generated."),
+                    "quiz": result_state.get("quiz", []),
+                    "performance": result_state.get("performance", {}),
+                    "adaptive_plan": result_state.get("adaptive_plan", "❌ No adaptive plan generated.")
                 })
 
                 st.success("✅ MemoryPalAI pipeline completed successfully!")
 
-                # 🧠 Display Response
+                # 🧠 Final Answer
                 st.subheader("🧠 Final Answer")
                 st.markdown(result_state.get("answer", "❌ No response generated."))
 
-                # 🗓️ Display Plan
+                # 🗓️ Personalized Learning Roadmap
                 st.subheader("🗓️ Personalized Learning Roadmap")
                 st.markdown(result_state.get("plan", "❌ No plan generated."))
 
-                # 🕸 Display Knowledge Graph (if available)
+                # 🕸 Extracted Knowledge Graph
                 if result_state.graph_data:
                     st.subheader("🕸️ Extracted Knowledge Graph")
                     render_knowledge_graph(result_state.graph_data)
@@ -121,9 +119,46 @@ with col1:
                     content=result_state.get("answer", ""),
                     metadata={"source": uploaded_file.name},
                 )
+
+                # -----------------------
+                # 🧠 Adaptive Quiz Section
+                # -----------------------
+                quiz = result_state.get("quiz", [])
+                if quiz:
+                    st.markdown("---")
+                    st.subheader("🧩 Adaptive Quiz — Test Your Understanding")
+
+                    user_answers = {}
+                    for idx, q in enumerate(quiz, start=1):
+                        st.markdown(f"**Q{idx}. {q['question']}**")
+                        user_answers[str(idx)] = st.radio(
+                            f"Select answer for Question {idx}",
+                            q["options"],
+                            key=f"quiz_q{idx}"
+                        )
+
+                    if st.button("✅ Submit Answers"):
+                        from app.agents.quiz_agent import QuizAgent
+                        quiz_agent = QuizAgent()
+
+                        performance = quiz_agent.evaluate_answers(quiz, user_answers)
+                        adaptive_plan = quiz_agent.recommend_next_steps(
+                            performance,
+                            user_goal or "Learn effectively",
+                            result_state.get("plan", "")
+                        )
+
+                        st.markdown("### 📊 Your Quiz Performance")
+                        st.json(performance)
+
+                        st.markdown("### 🔁 Adaptive Learning Plan (Next Steps)")
+                        st.markdown(adaptive_plan)
+
+                else:
+                    st.warning("⚠️ No quiz generated for this content.")
+
             else:
                 st.error("❌ Pipeline failed — no final state returned.")
-
 
 # -----------------------
 # SIDEBAR / RIGHT PANEL
@@ -142,9 +177,10 @@ with col2:
     st.header("🕓 Recent Queries")
 
     if st.session_state.history:
-        for item in reversed(st.session_state.history[-5:]):  # Show last 5
+        for item in reversed(st.session_state.history[-5:]):
             st.markdown(f"**❓ Query:** {item['query']}")
             st.markdown(f"**🧠 Response:** {item['response'][:200]}...")
+            st.markdown(f"**📊 Accuracy:** {item.get('performance', {}).get('accuracy', 'N/A')}%")
             st.markdown("---")
     else:
         st.caption("No recent queries yet.")
