@@ -7,16 +7,8 @@ class RetrieverAgent:
         print("✅ RetrieverAgent initialized (ChromaDB).")
 
     def add_document(self, doc_id: str, content: str, metadata: dict = None):
-        """Add document with metadata — ensuring metadata is non-empty in VectorDB."""
-        metadata = metadata or {}
-        # don't let metadata be empty dict; VectorDB.add_document will fix, but keep useful keys
-        if "source" not in metadata:
-            metadata["source"] = doc_id
-        try:
-            self.db.add_document(doc_id, content, metadata)
-            print(f"📥 Added document {doc_id} with metadata {metadata}")
-        except Exception as e:
-            print(f"❌ Error adding doc {doc_id}: {e}")
+        self.db.add_document(doc_id, content, metadata or {})
+        print(f"📥 Added document {doc_id}")
 
     def query(self, query_text: str, top_k: int = 3, source_filter: str = None):
         """Query vector DB and return structured results with provenance."""

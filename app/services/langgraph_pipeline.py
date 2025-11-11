@@ -1,17 +1,17 @@
 # app/services/langgraph_pipeline.py
-import os
-from typing import Optional
-from pydantic import BaseModel
+from typing import Dict, Any, Optional
 from langgraph.graph import StateGraph, END
 from langgraph.graph.state import CompiledStateGraph
+from pydantic import BaseModel, Field
 
 from app.agents.ingestion_agent import IngestionAgent
 from app.agents.organizer_agent import OrganizerAgent
 from app.agents.retriever_agent import RetrieverAgent
 from app.agents.planner_agent import PlannerAgent
-from app.services.llm_service import get_llm, generate_with_retry
+from app.services.llm_service import get_llm
 
-# ---------------- State model ----------------
+
+# ---------------- MemoryPalAI State ----------------
 class MemoryPalAIState(BaseModel):
     file_path: Optional[str] = None
     query: Optional[str] = None
@@ -23,7 +23,7 @@ class MemoryPalAIState(BaseModel):
     plan: Optional[str] = None
 
 
-# ---------------- Graph builder ----------------
+# ---------------- Graph Builder ----------------
 def build_memorypal_graph() -> CompiledStateGraph:
     ingestion_agent = IngestionAgent()
     organizer_agent = OrganizerAgent()
@@ -33,97 +33,73 @@ def build_memorypal_graph() -> CompiledStateGraph:
 
     graph = StateGraph(MemoryPalAIState)
 
-    # ingest node
+    # ----- Node: Ingestion -----
     def ingest_node(state: MemoryPalAIState):
         print(f"🔍 ingest_node received file_path={state.file_path}")
-        if not state.file_path or not os.path.exists(state.file_path):
-            print("❌ Invalid or missing file path.")
-            state.documents = []
+        if not state.file_path:
+            print("❌ No file path in state.")
             return state
         docs = ingestion_agent.ingest(state.file_path)
         state.documents = docs
         return state
 
-    # organize node
+    # ----- Node: Organizer -----
     def organize_node(state: MemoryPalAIState):
-        docs = state.documents or []
-        print(f"🔍 organize_node received {len(docs)} documents")
-        if docs:
-            text = " ".join([d.page_content for d in docs])
+        print(f"🔍 organize_node received {len(state.documents or [])} documents")
+        if state.documents:
+            text = " ".join([d.page_content for d in state.documents])
             graph_data = organizer_agent.extract_graph_data(text)
             state.graph_data = graph_data
         return state
 
-    # store node
+    # ----- Node: Store -----
     def store_node(state: MemoryPalAIState):
-        docs = state.documents or []
         print("🔍 store_node storing documents to vector DB...")
-        if docs:
-            for i, doc in enumerate(docs):
-                # ensure metadata dict exists
-                metadata = getattr(doc, "metadata", {}) or {}
-                metadata.setdefault("source", state.file_path or "unknown")
-                retriever_agent.add_document(f"doc_{i}", doc.page_content, metadata)
+        if state.documents:
+            for i, doc in enumerate(state.documents):
+                retriever_agent.add_document(f"doc_{i}", doc.page_content, doc.metadata)
         return state
 
-    # retrieve node
+    # ----- Node: Retrieve -----
     def retrieve_node(state: MemoryPalAIState):
-        q = state.query or ""
-        print(f"🔍 retrieve_node running query: {q}")
-        results = retriever_agent.query(q, top_k=3)
+        print("🔍 retrieve_node running query:", state.query)
+        results = retriever_agent.query(state.query or "")
         state.retrieval_results = results
         return state
 
-    # answer node
+    # ----- Node: Answer -----
     def answer_node(state: MemoryPalAIState):
         print("🔍 answer_node generating answer...")
-        results = state.retrieval_results or {}
-        docs = results.get("documents", [])
-        if not docs:
-            state.answer = "❌ No relevant documents found to answer the query."
+        results = state.retrieval_results
+        if not results or not results.get("documents"):
+            state.answer = "❌ No relevant information found."
             return state
 
-        # context assembly: docs may be strings or lists — handle both
-        if isinstance(docs[0], list):
-            context = "\n\n".join(docs[0][:3])
-        else:
-            context = "\n\n".join(docs[:3])
-
+        context = "\n\n".join(results["documents"][0])
+        query = state.query or ""
         prompt = f"""
-You are MemoryPalAI, a retrieval-grounded assistant.
-Answer only from the CONTEXT below. If the answer is not present, say: "I don't know based on the provided documents."
+        You are MemoryPalAI, a personalized knowledge assistant.
+        Context:
+        {context}
 
-CONTEXT:
-{context}
-
-QUESTION:
-{state.query or ''}
-"""
-        try:
-            text = generate_with_retry(llm, prompt, generation_config={"temperature": 0.0, "max_output_tokens": 400})
-            state.answer = text
-        except Exception as e:
-            state.answer = f"❌ Error generating answer: {e}"
+        Question:
+        {query}
+        """
+        response = llm.generate_content(prompt)
+        state.answer = response.text.strip()
         return state
 
-    # plan node
+    # ----- Node: Plan -----
     def plan_node(state: MemoryPalAIState):
         print("🔍 plan_node creating roadmap...")
         user_goal = state.user_goal or "Learn effectively."
-        retrieved_docs = state.retrieval_results.get("documents", []) if state.retrieval_results else []
-        if retrieved_docs:
-            if isinstance(retrieved_docs[0], list):
-                knowledge_summary = " ".join(retrieved_docs[0][:5])
-            else:
-                knowledge_summary = " ".join(retrieved_docs[:5])
-        else:
-            knowledge_summary = ""
-
-        plan_text = planner_agent.create_plan(user_goal, knowledge_summary)
-        state.plan = plan_text
+        retrieved_docs = state.retrieval_results.get("documents", [[""]])[0] if state.retrieval_results else [""]
+        knowledge_summary = " ".join(retrieved_docs)
+        plan = planner_agent.create_plan(user_goal, knowledge_summary)
+        state.plan = plan
         return state
 
-    # add nodes and edges
+    # ----- Graph Construction -----
     graph.add_node("ingest", ingest_node)
     graph.add_node("organize", organize_node)
     graph.add_node("store", store_node)
@@ -139,24 +115,30 @@ QUESTION:
     graph.add_edge("answer", "plan")
     graph.add_edge("plan", END)
 
-    compiled = graph.compile()
+    compiled_graph = graph.compile()
     print("✅ LangGraph StateGraph compiled successfully.")
-    return compiled
+    return compiled_graph
 
 
-# ---------------- test runner ----------------
+# ---------------- Test Runner ----------------
 if __name__ == "__main__":
-    compiled_graph = build_memorypal_graph()
+    # Ensure test file exists
     test_file = "test_note.txt"
-    if not os.path.exists(test_file):
-        with open(test_file, "w") as f:
-            f.write("Artificial Intelligence enables machines to think and learn like humans.")
-    state = MemoryPalAIState(file_path=test_file, query="What is Artificial Intelligence?", user_goal="Learn AI")
-    print("🚀 Running pipeline...")
-    result = compiled_graph.invoke(dict(state))
-    if result:
-        print("\n🧠 Answer:\n", result.get("answer"))
-        print("\n🗓️ Plan:\n", result.get("plan"))
-        print("\n📊 Graph Data:\n", result.get("graph_data"))
+    with open(test_file, "w") as f:
+        f.write("Artificial Intelligence enables machines to think and learn like humans.")
+
+    compiled_graph = build_memorypal_graph()
+    state = MemoryPalAIState(
+        file_path=test_file,
+        query="What is Artificial Intelligence?",
+        user_goal="Learn AI in depth"
+    )
+
+    print("🚀 Running MemoryPalAI LangGraph pipeline...\n")
+    result_state = compiled_graph.invoke(state)
+
+    if result_state:
+        print("\n🧠 Final Answer:\n", result_state.get("answer"))
+        print("\n🗓️ Personalized Plan:\n", result_state.get("plan"))
     else:
-        print("❌ No final state returned.")
+        print("❌ Pipeline failed — no final state returned.")
