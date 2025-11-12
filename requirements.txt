@@ -30,3 +30,5 @@ networkx
 pyvis
 langchain-core
 spacy
+pinecone-client
+PyMuPDF

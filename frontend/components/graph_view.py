@@ -5,45 +5,28 @@ import tempfile
 import os
 
 def render_knowledge_graph(graph_data):
-    """Render knowledge graph interactively using PyVis with safety checks."""
+    """Render knowledge graph interactively using PyVis. Safely skip broken edges."""
     net = Network(height="450px", width="100%", bgcolor="#222222", font_color="white")
-    try:
-        net.barnes_hut()
-    except Exception:
-        pass
+    net.barnes_hut()
 
-    nodes = graph_data.get("nodes", [])
-    edges = graph_data.get("edges", [])
+    nodes = graph_data.get("nodes", []) or []
+    edges = graph_data.get("edges", []) or []
 
     node_ids = set()
     for node in nodes:
-        node_id = str(node.get("id") or node.get("name") or "")
-        if not node_id:
-            continue
-        node_ids.add(node_id)
-        label = node.get("label", node_id)
-        title = node.get("type", "")
-        # add node safely
-        try:
-            net.add_node(node_id, label=label, title=title)
-        except Exception:
-            # fallback: skip problematic node
-            continue
+        nid = node.get("id") or str(node)
+        node_ids.add(nid)
+        net.add_node(nid, label=nid, title=node.get("type", ""), color="#00BFFF")
 
-    # Add edges only if both endpoints exist
     for edge in edges:
         src = edge.get("source")
         tgt = edge.get("target")
-        lbl = edge.get("label", "")
         if not src or not tgt:
             continue
         if src not in node_ids or tgt not in node_ids:
-            # skip edges that reference non-existent nodes
+            # skip edges referencing missing nodes
             continue
-        try:
-            net.add_edge(src, tgt, label=lbl)
-        except Exception:
-            continue
+        net.add_edge(src, tgt, label=edge.get("label", ""), color="#FF6F61")
 
     tmp_dir = tempfile.mkdtemp()
     html_path = os.path.join(tmp_dir, "graph.html")
