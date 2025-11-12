@@ -1,18 +1,12 @@
-import asyncio
-from app.services.parser import document_parser
-from app.utils.chunker import chunk_from_text
+from pinecone.grpc import PineconeGRPC as Pinecone
+import os
+from dotenv import load_dotenv
 
-async def main():
-    url = "https://arxiv.org/pdf/2303.00001.pdf"  # Example PDF
-    text = await document_parser.parse_document(url)
-    if not text:
-        print("Failed to parse document.")
-        return
+load_dotenv()
+pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
 
-    print(f"Document length: {len(text)} characters")
-    chunks = await chunk_from_text(text)
-    print(f"Number of chunks: {len(chunks)}")
-    for i, c in enumerate(chunks[:3]):
-        print(f"\n--- Chunk {i+1} ---\n{c[:200]}...")  # print first 200 chars
-
-asyncio.run(main())
+print("Listing all indexes in your account:")
+try:
+    print(pc.list_indexes())
+except Exception as e:
+    print("❌ Error listing indexes:", e)
