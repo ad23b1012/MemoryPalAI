@@ -1,13 +1,18 @@
-import time
+# app/agents/organizer_agent.py
+import os
 import json
+import time
 import re
+import spacy
 from app.services.llm_service import get_llm, generate_with_retry
 
+# ensure user installed en_core_web_sm: python -m spacy download en_core_web_sm
+nlp = spacy.load("en_core_web_sm")
 
 class OrganizerAgent:
     """
-    Extracts entities and relationships safely using Gemini 2.5 Flash.
-    Includes retries, chunking, fallback graphs, and JSON correction.
+    Robust organizer: attempts JSON extraction via LLM, falls back to spaCy-based extraction.
+    Returns graph dict: {nodes: [...], edges: [...], subject: str, style: str}
     """
 
     def __init__(self):
@@ -15,117 +20,157 @@ class OrganizerAgent:
         print("✅ OrganizerAgent initialized with Gemini-2.5-flash.")
 
     def extract_graph_data(self, text: str):
-        """Main graph extraction with retry logic."""
-        print("\n🚀 OrganizerAgent: extracting entities and relationships...")
-
-        if not text or len(text.strip()) == 0:
-            print("⚠️ Empty text provided — returning default graph.")
+        print("\n🚀 OrganizerAgent: extracting entities, relationships, and style...")
+        if not text or not text.strip():
             return self._default_graph()
 
         chunks = self._split_text(text, max_chunk_size=3000)
-        merged_graph = self._default_graph()
+        merged = self._default_graph()
+
+        # create directories for debugging responses
+        os.makedirs("/tmp/memorypal_raw_responses", exist_ok=True)
+        os.makedirs("/tmp/memorypal_failed_chunks", exist_ok=True)
 
         for idx, chunk in enumerate(chunks):
-            print(f"🧩 Processing chunk {idx + 1}/{len(chunks)} (length={len(chunk)} chars)")
-            for attempt in range(3):
-                try:
-                    sub_graph = self._process_chunk(chunk)
-                    if sub_graph and (sub_graph.get("nodes") or sub_graph.get("edges")):
-                        merged_graph = self._merge_graphs(merged_graph, sub_graph)
-                    break
-                except Exception as e:
-                    print(f"⚠️ Chunk {idx + 1} attempt {attempt + 1} failed: {e}")
-                    if attempt < 2:
-                        time.sleep((attempt + 1) * 3)
-                    else:
-                        print(f"❌ Failed to process chunk {idx + 1} after 3 attempts.")
+            print(f"🧩 Processing chunk {idx+1}/{len(chunks)} (length={len(chunk)} chars)")
+            preview = chunk[:150].replace("\n", " ")
+            print(f"📖 Preview: {preview}...\n")
+            try:
+                data = self._process_chunk(chunk)
+                # persist raw responses for debugging (response saved inside _process_chunk)
+                if data and (data.get("nodes") or data.get("edges")):
+                    merged = self._merge_graphs(merged, data)
+                else:
+                    # even if empty nodes/edges, still try merging subject/style if present
+                    if data:
+                        merged["subject"] = data.get("subject", merged.get("subject", "Unknown"))
+                        merged["style"] = data.get("style", merged.get("style", "Unknown"))
+                print(f"✅ Chunk {idx+1} processed. Found {len(data.get('nodes', []))} nodes.")
+            except Exception as e:
+                print(f"⚠️ Chunk {idx+1} parsing failed: {e}")
+                # fallback: spaCy
+                fallback = self._spacy_fallback(chunk)
+                merged = self._merge_graphs(merged, fallback)
+
+        # ensure keys
+        merged.setdefault("subject", "Unknown")
+        merged.setdefault("style", "Unknown")
         print("✅ Graph extraction complete.")
-        return merged_graph
+        return merged
 
     def _process_chunk(self, chunk: str):
-        """Process a single chunk through Gemini with enforced JSON output."""
         prompt = f"""
-        You are MemoryPalAI's Organizer Agent.
-
-        Analyze the provided text and extract structured knowledge strictly in JSON format.
-        Identify key entities (nodes) and relationships (edges) **only** from the text.
-
-        Output must be a valid JSON object ONLY — no extra explanations, Markdown, or text outside JSON.
-
-        Example format:
-        {{
-          "nodes": [{{"id": "EntityName", "type": "Concept"}}],
-          "edges": [{{"source": "EntityName1", "target": "EntityName2", "label": "relationship"}}]
-        }}
-
-        Text to analyze:
-        {chunk}
-        """
-
+You are an assistant that returns **only** valid JSON. Extract nodes, edges, subject, style.
+Output example:
+{{
+  "nodes": [{{"id":"Artificial Intelligence","type":"Concept"}}],
+  "edges": [{{"source":"Artificial Intelligence","target":"Machine Learning","label":"includes"}}],
+  "subject": "Artificial Intelligence",
+  "style": "Example-driven"
+}}
+Text:
+{chunk}
+"""
+        # call LLM
+        text = generate_with_retry(self.llm, prompt)
+        # save raw for debugging
+        idx = int(time.time() * 1000) % 1000000
+        raw_path = f"/tmp/memorypal_raw_responses/chunk_{idx}_raw.txt"
         try:
-            response_text = generate_with_retry(self.llm, prompt)
-            json_str = self._extract_json_block(response_text)
-            data = json.loads(json_str)
-            if not isinstance(data, dict):
-                raise ValueError("Invalid JSON structure.")
-            return data
+            with open(raw_path, "w", encoding="utf-8") as f:
+                f.write(text)
+        except Exception:
+            pass
 
-        except json.JSONDecodeError as e:
-            print(f"⚠️ JSON decode error: {e}")
-            return {"nodes": [], "edges": []}
+        # try to extract JSON block
+        json_block = self._extract_json_block(text)
+        try:
+            data = json.loads(json_block)
+            # normalize keys
+            data.setdefault("nodes", [])
+            data.setdefault("edges", [])
+            data.setdefault("subject", "Unknown")
+            data.setdefault("style", "Unknown")
+            return data
         except Exception as e:
-            print(f"❌ Error during chunk processing: {e}")
-            return {"nodes": [], "edges": []}
+            # save failed chunk + response for debugging
+            try:
+                i = int(time.time() * 1000) % 1000000
+                with open(f"/tmp/memorypal_failed_chunks/failed_chunk_{i}_json_error.txt", "w", encoding="utf-8") as f:
+                    f.write(f"chunk:\n{chunk}\n\nresponse:\n{text}\n\nerror:\n{e}")
+            except Exception:
+                pass
+            # fallback to spaCy extraction
+            return self._spacy_fallback(chunk)
 
     def _extract_json_block(self, text: str) -> str:
-        """
-        Extracts the first valid JSON object from a mixed response.
-        Supports extra text before/after JSON.
-        """
-        # Remove code fences like ```json ... ```
-        text = text.replace("```json", "").replace("```", "").strip()
-
-        # Find the first balanced {...} block
-        start = text.find("{")
-        end = text.rfind("}")
+        # remove code fences commonly returned by LLMs
+        t = re.sub(r"```(?:json)?", "", text, flags=re.IGNORECASE).strip()
+        # find first {...} balanced block — naive but practical
+        start = t.find("{")
+        end = t.rfind("}")
         if start != -1 and end != -1 and end > start:
-            return text[start:end + 1]
+            return t[start:end+1]
+        # otherwise return text (likely not valid JSON)
+        return t
 
-        # Fallback — return entire text
-        return text
+    def _spacy_fallback(self, text: str):
+        doc = nlp(text)
+        nodes = []
+        seen = set()
+        # Named entities first
+        for ent in doc.ents:
+            key = ent.text.strip()
+            if key and key not in seen:
+                nodes.append({"id": key, "type": ent.label_})
+                seen.add(key)
+        # noun chunks as concepts
+        for nc in doc.noun_chunks:
+            key = nc.text.strip()
+            if len(key) > 3 and key not in seen:
+                nodes.append({"id": key, "type": "Phrase"})
+                seen.add(key)
+        # create simple edges by co-occurrence inside sentences
+        edges = []
+        sentences = list(doc.sents)
+        for sent in sentences:
+            present = [n["id"] for n in nodes if n["id"] in sent.text]
+            for i in range(len(present)):
+                for j in range(i+1, len(present)):
+                    edges.append({"source": present[i], "target": present[j], "label": "related_to"})
+        subject = nodes[0]["id"] if nodes else "Unknown"
+        style = "Descriptive"
+        return {"nodes": nodes, "edges": edges, "subject": subject, "style": style}
 
     def _split_text(self, text: str, max_chunk_size: int = 3000):
-        """Split text into manageable overlapping chunks."""
-        chunks, step = [], max_chunk_size - 500
+        chunks = []
+        step = max_chunk_size - 500
         for i in range(0, len(text), step):
-            chunks.append(text[i:i + max_chunk_size])
+            chunks.append(text[i:i+max_chunk_size])
         return chunks
 
     def _merge_graphs(self, main_graph, new_graph):
-        """Merge multiple partial graphs without duplication."""
-        node_ids = {node["id"] for node in main_graph["nodes"]}
-        for node in new_graph.get("nodes", []):
-            if node.get("id") not in node_ids:
-                main_graph["nodes"].append(node)
-                node_ids.add(node["id"])
-
-        for edge in new_graph.get("edges", []):
-            if edge not in main_graph["edges"]:
-                main_graph["edges"].append(edge)
+        node_ids = {n["id"] for n in main_graph.get("nodes", [])}
+        for n in new_graph.get("nodes", []):
+            if n.get("id") not in node_ids:
+                main_graph["nodes"].append(n)
+                node_ids.add(n.get("id"))
+        for e in new_graph.get("edges", []):
+            if e not in main_graph.get("edges", []):
+                main_graph["edges"].append(e)
+        # prefer subject/style from new_graph if main_graph still unknown
+        if new_graph.get("subject") and main_graph.get("subject") in [None, "Unknown"]:
+            main_graph["subject"] = new_graph.get("subject")
+        if new_graph.get("style") and main_graph.get("style") in [None, "Unknown"]:
+            main_graph["style"] = new_graph.get("style")
         return main_graph
 
     def _default_graph(self):
-        """Return a safe fallback graph if LLM extraction fails."""
-        return {
-            "nodes": [{"id": "Document", "type": "Text"}],
-            "edges": []
-        }
+        return {"nodes":[{"id":"Document","type":"Text"}],"edges":[], "subject":"Unknown","style":"Unknown"}
 
 
-# ----------------------- TEST BLOCK -----------------------
 if __name__ == "__main__":
     agent = OrganizerAgent()
     test_text = "Artificial Intelligence involves Machine Learning, Deep Learning, and Neural Networks."
     graph = agent.extract_graph_data(test_text)
-    print("\n✅ Extracted Graph:")
     print(json.dumps(graph, indent=2))

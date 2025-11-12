@@ -21,6 +21,11 @@ class SessionManager:
             except Exception:
                 return {"uploaded_files": []}
         else:
+            # ensure directory exists
+            try:
+                os.makedirs(os.path.dirname(self.session_file), exist_ok=True)
+            except Exception:
+                pass
             return {"uploaded_files": []}
 
     def _save_session(self):
@@ -47,4 +52,3 @@ class SessionManager:
         """Clear session memory."""
         st.session_state.session_data = {"uploaded_files": []}
         self._save_session()
-        st.success("🧹 Session memory cleared.")
