@@ -6,10 +6,13 @@ import hashlib
 from dotenv import load_dotenv
 from app.services.embedder import embed_text, EMBEDDING_DIMENSION # Import our function and dimension
 from pinecone import Pinecone, ServerlessSpec
+# --- IMPORT LANGCHAIN'S SPLITTER AND DOCUMENT ---
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 
-# --- Pinecone setup ---
+# -------------------------------------------------
+# Pinecone setup
+# -------------------------------------------------
 load_dotenv()
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "memorypal-ai")
@@ -163,9 +166,9 @@ class PineconeDB:
             print(f"❌ Failed to delete document '{doc_id}': {e}")
             return None
 
-# if __name__ == "__main__":
-#     db = PineconeDB()
-#     text = "Artificial Intelligence is the simulation of human intelligence by machines."
-#     db.add_document("demo_doc", text, {"source": "demo.pdf", "tags": ["AI", "intro"]}, topic="AI")
-#     res = db.query("What is AI?", top_k=3)
-#     print(res)
+if __name__ == "__main__":
+    db = PineconeDB()
+    text = "Artificial Intelligence is the simulation of human intelligence by machines."
+    db.add_document("demo_doc", text, {"source": "demo.pdf", "tags": ["AI", "intro"]}, topic="AI")
+    res = db.query("What is AI?", top_k=3)
+    print(res)

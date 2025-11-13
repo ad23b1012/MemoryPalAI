@@ -11,14 +11,9 @@ import re
 # make backend importable
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-# --- FIX 1: REMOVED LANGGRAPH & UNUSED AGENT ---
-# from app.services.langgraph_pipeline import build_memorypal_graph, MemoryPalAIState
-# from app.agents.retriever_agent import RetrieverAgent 
-# --- FIX 2: CORRECTED COMPONENTS PATH ---
+# --- 1. CORRECTED IMPORTS ---
 from frontend.components.session_manager import SessionManager
 from frontend.components.graph_view import render_knowledge_graph
-
-# New imports
 from app.services.style_detector import detect_style_from_text
 from app.database.pinecone_db import PineconeDB
 from app.services.llm_service import get_llm, generate_with_retry
@@ -69,10 +64,6 @@ if "generate_quiz_pressed" not in st.session_state:
 
 # helper: check whether content already indexed
 def content_already_indexed(db, raw_text):
-    """
-    Use db.has_content if available; otherwise compute a hash and search
-    for any recent vectors having the same 'hash' metadata.
-    """
     if db is None:
         return False
     if hasattr(db, "has_content") and callable(getattr(db, "has_content")):
@@ -80,8 +71,6 @@ def content_already_indexed(db, raw_text):
             return db.has_content(raw_text)
         except Exception:
             pass
-
-    # fallback: compute hash and query approximate neighbors to match metadata.hash
     try:
         h = hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
         snippet = raw_text[:400]
@@ -115,9 +104,11 @@ with tabs[0]:
             temp_dir = tempfile.mkdtemp()
             file_path = None
             raw_text = ""
+            filename = ""
 
             if uploaded_file:
-                file_path = os.path.join(temp_dir, uploaded_file.name)
+                filename = uploaded_file.name
+                file_path = os.path.join(temp_dir, filename)
                 with open(file_path, "wb") as f:
                     f.write(uploaded_file.getvalue())
                 st.info(f"Saved upload to {file_path}")
@@ -128,7 +119,6 @@ with tabs[0]:
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         raw_text = f.read()
                 elif file_path and file_path.lower().endswith(".pdf"):
-                    # use PyMuPDF (fitz) if available
                     try:
                         import fitz  # PyMuPDF
                         doc = fitz.open(file_path)
@@ -138,12 +128,11 @@ with tabs[0]:
                         st.error(f"Failed to extract PDF text (need PyMuPDF): {e}")
                         raw_text = ""
                 elif url_text:
-                    # minimal URL fetch (not robust)
+                    filename = url_text
                     import requests
                     r = requests.get(url_text, timeout=10)
                     raw_text = r.text
-                else:
-                    raw_text = ""
+                
             except Exception as e:
                 st.error(f"Failed extracting text: {e}")
                 raw_text = ""
@@ -152,17 +141,18 @@ with tabs[0]:
                 st.error("No text extracted from the provided source.")
             else:
                 # detect style/tone/tags (organizer or style detector)
-                try:
-                    sd = detect_style_from_text(raw_text)
-                except Exception:
-                    sd = {"subject": topic_input or "Unknown", "style": "Unknown", "tone": "neutral", "tags": []}
+                with st.spinner("Detecting style and topic..."):
+                    try:
+                        sd = detect_style_from_text(raw_text)
+                    except Exception as e:
+                        print(f"Style detector failed: {e}")
+                        sd = {"subject": topic_input or "Unknown", "style": "Unknown", "tone": "neutral", "tags": []}
 
                 subject = sd.get("subject", topic_input or "Unknown")
                 style = sd.get("style")
                 tone = sd.get("tone")
                 tags = sd.get("tags", [])
 
-                filename = uploaded_file.name if uploaded_file else url_text
                 metadata = {
                     "source": filename,
                     "subject": subject,
@@ -173,31 +163,33 @@ with tabs[0]:
 
                 if pinecone_db:
                     already = False
-                    try:
-                        already = content_already_indexed(pinecone_db, raw_text)
-                    except Exception as e:
-                        st.warning(f"Dedup check error (continuing): {e}")
-                        already = False
+                    with st.spinner("Checking for duplicates..."):
+                        try:
+                            already = content_already_indexed(pinecone_db, raw_text)
+                        except Exception as e:
+                            st.warning(f"Dedup check error (continuing): {e}")
+                            already = False
 
                     if already:
                         st.warning("This content appears to already be indexed — skipping duplicate upload.")
                     else:
-                        with st.spinner("Indexing into Pinecone..."):
+                        with st.spinner(f"Indexing {len(raw_text)} characters into Pinecone..."):
                             resp = pinecone_db.add_document(doc_id=os.path.basename(filename), content=raw_text, metadata=metadata, topic=subject)
                             if resp is None:
                                 st.error("Indexing failed. Check server logs.")
                             else:
                                 st.success(f"Indexed '{filename}' with subject='{subject}', style='{style}', tone='{tone}'")
-                                session.add_file(file_path or filename)
+                                session.add_file(filename) # Use filename not temp path
                 else:
                     st.info("Pinecone not configured — saving locally to session only.")
-                    session.add_file(file_path or filename)
+                    session.add_file(filename)
 
     st.markdown("---")
     st.header("Indexed Documents (summary)")
     if pinecone_db:
         stats = pinecone_db.list_documents()
-        st.json(stats)
+        st.json(stats) # This shows the JSON error in your screenshot
+        
     uploaded_files = session.list_files()
     if uploaded_files:
         for f in uploaded_files:
@@ -226,15 +218,31 @@ with tabs[1]:
                     res = pinecone_db.query(query, top_k=4, topic_filter=selected_topic or None)
                     docs = res.get("documents", [])
                     metas = res.get("metadatas", [])
+                    llm = get_llm("gemini-2.5-flash") # Get the LLM instance
+                    context = ""
+                    context_for_plan = ""
+                    answer = ""
+
                     if not docs:
-                        st.warning("No relevant content found for this query. Try a different query or upload more documents.")
+                        # --- USE CASE 1: NO CONTEXT FOUND (FALLBACK) ---
+                        st.warning("The answer was not found in your documents. Providing a general answer...")
                         st.session_state.last_retrieval_context = ""
+                        
+                        answer_prompt = f"You are a helpful assistant. Provide a general, helpful answer to the following question: {query}"
+                        answer = generate_with_retry(llm, answer_prompt, retries=2)
+                        
+                        st.subheader("🧠 Final Answer (General Knowledge)")
+                        st.markdown(answer)
+                        
+                        context_for_plan = f"The user's query is: {query}. They have no local documents on this."
+                    
                     else:
+                        # --- USE CASE 2: CONTEXT FOUND (STANDARD RAG) ---
                         context = "\n\n---\n\n".join(docs[:4])
                         st.session_state.last_retrieval_context = context
 
                         answer_prompt = f"""
-You are MemoryPalAI — a retrieval-grounded assistant. Use ONLY the CONTEXT below to answer the QUESTION. If the answer is not present, reply: "I don't know based on the provided documents."
+You are MemoryPalAI — a retrieval-grounded assistant. Use ONLY the CONTEXT below to answer the QUESTION. If the answer is not present, reply with the *exact* phrase: "I don't know based on the provided documents."
 
 CONTEXT:
 {context}
@@ -242,53 +250,64 @@ CONTEXT:
 QUESTION:
 {query}
 """
-                        llm = get_llm("gemini-2.5-flash")
                         answer = generate_with_retry(llm, answer_prompt, retries=2)
-                        st.subheader("🧠 Final Answer (based on retrieved docs)")
-                        st.markdown(answer)
+                        
+                        if "I don't know based on the provided documents" in answer:
+                            st.warning("The answer was not found in your documents. Providing a general answer...")
+                            general_prompt = f"You are a helpful assistant. Provide a general, helpful answer to the following question: {query}"
+                            answer = generate_with_retry(llm, general_prompt, retries=2)
+                            
+                            st.subheader("🧠 Final Answer (General Knowledge)")
+                            st.markdown(answer)
+                            context_for_plan = f"The user's query is: {query}. They have no local documents on this."
+                        else:
+                            st.subheader("🧠 Final Answer (based on retrieved docs)")
+                            st.markdown(answer)
+                            context_for_plan = context[:1000] # Base plan on retrieved context
+                    
+                    # --- [RUNS IN ALL CASES] ---
+                    
+                    st.session_state.history.append({"query": query, "response": answer, "time": time.time()})
 
-                        st.session_state.history.append({"query": query, "response": answer, "time": time.time()})
-
-                        planner_prompt = f"""
+                    # Planner step
+                    planner_prompt = f"""
 You are a planning assistant. User goal: "Learn this topic better".
 Context summary from retrieved materials:
-{context[:1000]}
+{context_for_plan}
 
 Return a concise learning plan (3 phases). Output markdown only.
 """
-                        plan = generate_with_retry(llm, planner_prompt, retries=2)
-                        st.subheader("🗓️ Suggested Learning Plan")
-                        st.markdown(plan)
+                    plan = generate_with_retry(llm, planner_prompt, retries=2)
+                    st.subheader("🗓️ Suggested Learning Plan")
+                    st.markdown(plan)
 
-                        # --- FIX 3: CORRECTED GRAPH RENDERING LOGIC ---
-                        graph_data = {"nodes": [], "edges": [], "subject": selected_topic or (metas[0].get("subject") if metas else "Unknown"), "style": metas[0].get("style") if metas else "Unknown"}
-                        node_ids = set()
-                        for m in metas:
-                            subj = m.get("topic") or m.get("subject")
+                    # Build lightweight graph_data from metadata
+                    graph_data = {"nodes": [], "edges": [], "subject": selected_topic or (metas[0].get("subject") if metas else "Unknown"), "style": metas[0].get("style") if metas else "Unknown"}
+                    node_ids = set()
+                    for m in metas:
+                        subj = m.get("topic") or m.get("subject")
+                        
+                        if subj: # Only add node if subject is valid
+                            if subj not in node_ids:
+                                graph_data["nodes"].append({"id": subj, "type": "Topic"})
+                                node_ids.add(subj)
                             
-                            if subj: # Only add node if subject is valid
-                                if subj not in node_ids:
-                                    graph_data["nodes"].append({"id": subj, "type": "Topic"})
-                                    node_ids.add(subj)
-                                
-                                for t in (m.get("tags", []) or []):
-                                    if t and t not in node_ids:
-                                        graph_data["nodes"].append({"id": t, "type": "Tag"})
-                                        node_ids.add(t)
-                                    # Ensure edge has valid source and target
-                                    if t and subj: # This check is now safe
-                                        graph_data["edges"].append({"source": subj, "target": t, "label": "has_tag"})
+                            for t in (m.get("tags", []) or []):
+                                if t and t not in node_ids:
+                                    graph_data["nodes"].append({"id": t, "type": "Tag"})
+                                    node_ids.add(t)
+                                if t and subj: # This check is now safe
+                                    graph_data["edges"].append({"source": subj, "target": t, "label": "has_tag"})
 
-                        if graph_data.get("nodes"):
-                            st.subheader("🕸️ Knowledge Graph (lightweight)")
-                            try:
-                                render_knowledge_graph(graph_data)
-                            except Exception as e:
-                                st.warning("Graph render failed: " + str(e))
-                        # --- END OF FIX 3 ---
-
-                        st.session_state._last_plan = plan
-                        st.session_state._last_subject = graph_data.get("subject", "Unknown")
+                    if graph_data.get("nodes"):
+                        st.subheader("🕸️ Knowledge Graph (lightweight)")
+                        try:
+                            render_knowledge_graph(graph_data)
+                        except Exception as e:
+                            st.warning("Graph render failed: " + str(e))
+                    
+                    st.session_state._last_plan = plan
+                    st.session_state._last_subject = graph_data.get("subject", "Unknown")
 
     if st.session_state.last_retrieval_context:
         st.markdown("---")
@@ -340,7 +359,6 @@ Return a concise learning plan (3 phases). Output markdown only.
     key=f"q_radio_{i}",
     label_visibility="collapsed"
 )
-
                     answers_for_eval[f"Q{i+1}"] = sel
                 submitted = st.form_submit_button("Submit Quiz Answers")
 

@@ -3,6 +3,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from app.config import GOOGLE_API_KEY 
 import os
 
+# --- Model Configuration ---
 MODEL_NAME = "models/text-embedding-004" 
 embedder = None
 EMBEDDING_DIMENSION = 768 # Gemini's dimension
@@ -31,3 +32,15 @@ def embed_text(text: str) -> list[float]:
     except Exception as e:
         print(f"❌ Error generating embedding: {e}")
         return []
+
+# --- Test Block ---
+if __name__ == "__main__":
+    print("--- Testing Embedder Service ---")
+    if embedder:
+        test_vector = embed_text("This is a test sentence.")
+        if test_vector:
+             print(f"Successfully generated a vector of dimension: {len(test_vector)}")
+        else:
+             print("Failed to generate test vector.")
+    else:
+        print("Embedder could not be loaded. Check API key and configuration.")
