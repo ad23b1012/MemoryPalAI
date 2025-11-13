@@ -4,20 +4,39 @@ import os
 from app.services.llm_service import get_llm, generate_with_retry
 
 class RevisionAgent:
-    # ... (init and _load_memory, _save_memory are the same) ...
+    """
+    Automatically revises weak topics based on quiz results and user performance memory.
+    Generates simplified explanations, reinforcement questions, and learning resources.
+    """
+
+    def __init__(self):
+        # --- THIS IS THE FIX ---
+        # Initialize the LLM from the service
+        self.llm = get_llm("gemini-2.5-flash")
+        # ---------------------
+        
+        self.memory_file = os.path.join("app", "database", "user_profile.json")
+        os.makedirs(os.path.dirname(self.memory_file), exist_ok=True)
+        print("✅ RevisionAgent initialized with Gemini-2.5-flash.")
 
     def _load_memory(self):
+        """Loads the user's performance memory from a JSON file."""
         if not os.path.exists(self.memory_file):
             return {}
-        with open(self.memory_file, "r") as f:
-            return json.load(f)
+        try:
+            with open(self.memory_file, "r") as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            return {} # Return empty if JSON is corrupted
 
     def _save_memory(self, data):
-        with open(self.memory_file, "w") as f:
-            json.dump(data, f, indent=2)
+        """Saves the user's performance memory to a JSON file."""
+        try:
+            with open(self.memory_file, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"❌ Error saving user profile memory: {e}")
 
-    # --- 1. MODIFIED SIGNATURE ---
-    # Add 'style' and 'tone' parameters with defaults
     def revise(self, topic: str = None, subject: str = None, evaluation_text: str = "", style: str = "Descriptive", tone: str = "Neutral"):
         """
         Generates concise revision notes, adapting to the user's learning style.
@@ -25,8 +44,6 @@ class RevisionAgent:
         subject = subject or topic or "Unknown Topic"
         print(f"🔁 RevisionAgent triggered for subject: {subject} (Style: {style}, Tone: {tone})")
 
-        # --- 2. MODIFIED PROMPT ---
-        # Injects the style and tone into the prompt
         prompt = f"""
         You are MemoryPalAI's Revision Agent.
         Your explanation style must be: **{style}**
@@ -53,6 +70,7 @@ class RevisionAgent:
         """
 
         try:
+            # Use the 'self.llm' that was initialized
             revision_output = generate_with_retry(self.llm, prompt, retries=3)
             revision_text = revision_output if isinstance(revision_output, str) else str(revision_output)
 
