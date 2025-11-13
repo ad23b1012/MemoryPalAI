@@ -1,34 +1,33 @@
+# --- Frontend ---
 streamlit
-# LLM & API
-openai-whisper
-sentence-transformers
+streamlit-agraph
+pyvis
+networkx
 
-# File Loaders
-pypdf
+# --- AI Frameworks ---
+langchain
+langchain-core
+langchain-community
+langchain-google-genai
+langgraph
+pydantic
 
-# Databases
-chromadb
-psycopg2-binary
-
-# Frontend
-streamlit
-
-# Utilities
-python-dotenv
-reportlab
-langchain-chroma
-
+# --- LLM, Embedding & Audio ---
+google-generativeai
 openai-whisper
 ffmpeg-python==0.2.0
-google-generativeai
-langgraph
-langchain
-google-generativeai
-langchain-google-genai
-langchain-community
-networkx
-pyvis
-langchain-core
-spacy
-pinecone-client
+
+# --- Databases ---
+pinecone
+psycopg2-binary
+sqlalchemy
+
+# --- File Loaders ---
 PyMuPDF
+
+# --- NLP Tools ---
+spacy
+
+# --- Utilities ---
+python-dotenv
+requests

@@ -1,44 +1,33 @@
-from sentence_transformers import SentenceTransformer
+# app/services/embedder.py
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from app.config import GOOGLE_API_KEY 
 import os
 
-MODEL_NAME = 'all-MiniLM-L6-v2'
+MODEL_NAME = "models/text-embedding-004" 
+embedder = None
+EMBEDDING_DIMENSION = 768 # Gemini's dimension
 
 try:
-    model = SentenceTransformer(MODEL_NAME)
-    print(f"✅ Embedder Service initialized (using local model: {MODEL_NAME}).")
+    if not GOOGLE_API_KEY:
+        raise ValueError("GOOGLE_API_KEY not found. Please check your .env file.")
+    
+    embedder = GoogleGenerativeAIEmbeddings(
+        model=MODEL_NAME,
+        google_api_key=GOOGLE_API_KEY
+    )
+    print(f"✅ Embedder Service initialized (using Google Gemini: {MODEL_NAME}).")
 except Exception as e:
-    print(f"❌ Error loading Sentence Transformer model: {e}")
-    model = None
-
-def get_embedding_model():
-    """Return the loaded SentenceTransformer model."""
-    if model is None:
-        raise RuntimeError("Sentence Transformer model failed to load.")
-    return model
+    print(f"❌ CRITICAL ERROR: Failed to initialize Gemini embedder: {e}")
 
 def embed_text(text: str) -> list[float]:
-    """Generate embedding vector for a single text input."""
-    if model is None:
-        raise RuntimeError("Sentence Transformer model failed to load.")
+    """
+    Takes a single string of text and returns its embedding vector.
+    """
+    if embedder is None:
+        print("❌ Embedder not initialized. Returning empty vector.")
+        return []
     try:
-        vector = model.encode(text)
-        return vector.tolist()
+        return embedder.embed_query(text)
     except Exception as e:
         print(f"❌ Error generating embedding: {e}")
         return []
-
-# ✅ Compatibility alias for Pinecone integration
-def get_embeddings(text: str) -> list[float]:
-    """Alias for PineconeDB compatibility."""
-    return embed_text(text)
-
-if __name__ == "__main__":
-    try:
-        print("--- Testing Embedder Service ---")
-        test_vector = embed_text("This is a test sentence.")
-        if test_vector:
-            print(f"Successfully generated a vector of dimension: {len(test_vector)}")
-        else:
-            print("Failed to generate vector.")
-    except Exception as e:
-        print(f"❌ Error testing Embedder Service: {e}")

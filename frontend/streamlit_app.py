@@ -11,10 +11,12 @@ import re
 # make backend importable
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from app.services.langgraph_pipeline import build_memorypal_graph, MemoryPalAIState
-from app.agents.retriever_agent import RetrieverAgent
-from components.session_manager import SessionManager
-from components.graph_view import render_knowledge_graph
+# --- FIX 1: REMOVED LANGGRAPH & UNUSED AGENT ---
+# from app.services.langgraph_pipeline import build_memorypal_graph, MemoryPalAIState
+# from app.agents.retriever_agent import RetrieverAgent 
+# --- FIX 2: CORRECTED COMPONENTS PATH ---
+from frontend.components.session_manager import SessionManager
+from frontend.components.graph_view import render_knowledge_graph
 
 # New imports
 from app.services.style_detector import detect_style_from_text
@@ -35,7 +37,7 @@ st.title("🧠 MemoryPalAI — Intelligent Knowledge Workspace")
 
 st.markdown(
     "Upload documents / audio / URLs → extract style/tags → index into Pinecone. "
-    "Then go to Retrieve tab to ask questions, take quizzes, and get revision loops."
+    "Then go to Retrieve & Learn to ask questions, take quizzes, and get revision loops."
 )
 
 # Services & session
@@ -82,7 +84,6 @@ def content_already_indexed(db, raw_text):
     # fallback: compute hash and query approximate neighbors to match metadata.hash
     try:
         h = hashlib.sha256(raw_text.encode("utf-8")).hexdigest()
-        # Query using a short snippet so embedding is consistent with upsert-time check
         snippet = raw_text[:400]
         result = db.query(snippet, top_k=6)
         metas = result.get("metadatas", []) or []
@@ -140,7 +141,6 @@ with tabs[0]:
                     # minimal URL fetch (not robust)
                     import requests
                     r = requests.get(url_text, timeout=10)
-                    # try to extract text-ish content
                     raw_text = r.text
                 else:
                     raw_text = ""
@@ -162,7 +162,6 @@ with tabs[0]:
                 tone = sd.get("tone")
                 tags = sd.get("tags", [])
 
-                # Prepare metadata
                 filename = uploaded_file.name if uploaded_file else url_text
                 metadata = {
                     "source": filename,
@@ -172,7 +171,6 @@ with tabs[0]:
                     "tags": tags,
                 }
 
-                # deduplication check
                 if pinecone_db:
                     already = False
                     try:
@@ -217,7 +215,6 @@ with tabs[1]:
     query = st.text_input("Your question:", placeholder="e.g., What is an agent function?")
     selected_topic = st.text_input("Optional: limit to a topic (subject) from your indexed docs", placeholder="e.g., Artificial Intelligence")
 
-    # Retrieval action as a button (use key so session is stable)
     if st.button("🔎 Retrieve & Answer", key="retrieve_btn"):
         if not query or not query.strip():
             st.error("Please enter a question.")
@@ -233,7 +230,6 @@ with tabs[1]:
                         st.warning("No relevant content found for this query. Try a different query or upload more documents.")
                         st.session_state.last_retrieval_context = ""
                     else:
-                        # build a retrieval-grounded prompt
                         context = "\n\n---\n\n".join(docs[:4])
                         st.session_state.last_retrieval_context = context
 
@@ -251,10 +247,8 @@ QUESTION:
                         st.subheader("🧠 Final Answer (based on retrieved docs)")
                         st.markdown(answer)
 
-                        # Save to history
                         st.session_state.history.append({"query": query, "response": answer, "time": time.time()})
 
-                        # Planner step
                         planner_prompt = f"""
 You are a planning assistant. User goal: "Learn this topic better".
 Context summary from retrieved materials:
@@ -266,19 +260,24 @@ Return a concise learning plan (3 phases). Output markdown only.
                         st.subheader("🗓️ Suggested Learning Plan")
                         st.markdown(plan)
 
-                        # Build lightweight graph_data from metadata
+                        # --- FIX 3: CORRECTED GRAPH RENDERING LOGIC ---
                         graph_data = {"nodes": [], "edges": [], "subject": selected_topic or (metas[0].get("subject") if metas else "Unknown"), "style": metas[0].get("style") if metas else "Unknown"}
                         node_ids = set()
                         for m in metas:
                             subj = m.get("topic") or m.get("subject")
-                            if subj and subj not in node_ids:
-                                graph_data["nodes"].append({"id": subj, "type": "Topic"})
-                                node_ids.add(subj)
-                            for t in (m.get("tags", []) or []):
-                                if t and t not in node_ids:
-                                    graph_data["nodes"].append({"id": t, "type": "Tag"})
-                                    graph_data["edges"].append({"source": subj, "target": t, "label": "has_tag"})
-                                    node_ids.add(t)
+                            
+                            if subj: # Only add node if subject is valid
+                                if subj not in node_ids:
+                                    graph_data["nodes"].append({"id": subj, "type": "Topic"})
+                                    node_ids.add(subj)
+                                
+                                for t in (m.get("tags", []) or []):
+                                    if t and t not in node_ids:
+                                        graph_data["nodes"].append({"id": t, "type": "Tag"})
+                                        node_ids.add(t)
+                                    # Ensure edge has valid source and target
+                                    if t and subj: # This check is now safe
+                                        graph_data["edges"].append({"source": subj, "target": t, "label": "has_tag"})
 
                         if graph_data.get("nodes"):
                             st.subheader("🕸️ Knowledge Graph (lightweight)")
@@ -286,22 +285,21 @@ Return a concise learning plan (3 phases). Output markdown only.
                                 render_knowledge_graph(graph_data)
                             except Exception as e:
                                 st.warning("Graph render failed: " + str(e))
+                        # --- END OF FIX 3 ---
 
-                        # store the plan for quiz generation
                         st.session_state._last_plan = plan
                         st.session_state._last_subject = graph_data.get("subject", "Unknown")
 
-    # Show previously retrieved context (if present)
     if st.session_state.last_retrieval_context:
         st.markdown("---")
         st.subheader("🔎 Retrieved Context (preview)")
         st.write(st.session_state.last_retrieval_context[:2000] + ("..." if len(st.session_state.last_retrieval_context) > 2000 else ""))
 
         # QUIZ generation block
+        # ... (rest of the file is unchanged) ...
         st.markdown("---")
         st.subheader("🧩 Generate & Take a Quiz")
 
-        # When clicked, create quiz and save to session
         if st.button("🧠 Generate Quiz from Retrieved Material", key="gen_quiz"):
             try:
                 subject_for_quiz = st.session_state.get("_last_subject", "General")
@@ -313,11 +311,9 @@ Return a concise learning plan (3 phases). Output markdown only.
             except Exception as e:
                 st.error(f"Quiz generation failed: {e}")
 
-        # If quiz available, render interactive form
         if st.session_state.get("_last_quiz"):
             st.markdown("### Quiz (interactive)")
             quiz_text = st.session_state.get("_last_quiz")
-            # Parse blocks separated by '---'
             blocks = [b.strip() for b in re.split(r"-{3,}", quiz_text) if b.strip()]
             answers_for_eval = {}
 
@@ -327,18 +323,14 @@ Return a concise learning plan (3 phases). Output markdown only.
                     if not lines:
                         continue
                     qline = lines[0]
-                    # gather options in order A-D
                     opts = []
                     for ln in lines[1:]:
-                        # lines starting with A) B) C) D) or A. B. etc.
                         m = re.match(r"^[A-D]\s*[\)\.]\s*(.+)", ln)
                         if m:
                             opts.append(m.group(1).strip())
                         else:
-                            # fallback: treat whole line as option (if there are 4)
                             if ln:
                                 opts.append(ln)
-                    # ensure we have up to 4 options (pad if necessary)
                     while len(opts) < 4:
                         opts.append("N/A")
                     st.markdown(f"**{qline}**")
@@ -353,8 +345,6 @@ Return a concise learning plan (3 phases). Output markdown only.
                 submitted = st.form_submit_button("Submit Quiz Answers")
 
             if submitted:
-                # Map user's selected option text back to letter A-D for evaluator
-                # Need mapping from quiz_text options to letters
                 letter_answers = {}
                 for i, b in enumerate(blocks):
                     lines = [ln.strip() for ln in b.splitlines() if ln.strip()]
@@ -373,17 +363,14 @@ Return a concise learning plan (3 phases). Output markdown only.
                         idx = opts.index(chosen_text)
                         letter_answers[f"Q{i+1}"] = ["A", "B", "C", "D"][idx]
                     else:
-                        # fallback: choose A
                         letter_answers[f"Q{i+1}"] = "A"
 
-                # Evaluate via QuizAgent
                 with st.spinner("Evaluating quiz..."):
                     eval_text = quiz_agent.evaluate_answers(subject=st.session_state.get("_last_subject", "Unknown"), user_answers=letter_answers, quiz_text=quiz_text)
                     st.session_state._last_evaluation = eval_text
                     st.subheader("📊 Quiz Evaluation")
                     st.markdown(eval_text)
 
-                    # try to detect numeric score "x out of y" or "x / y"
                     pct = None
                     try:
                         m = re.search(r"(\d+)\s*(?:out of|/)\s*(\d+)", eval_text)
@@ -418,4 +405,5 @@ Return a concise learning plan (3 phases). Output markdown only.
         st.caption("No queries yet.")
 
 st.markdown("---")
-st.caption("Built with ❤️ using Gemini, LangGraph, local SentenceTransformer embedder, and Pinecone.")
+# --- FIX 4: CORRECTED THE CAPTION ---
+st.caption("Built with ❤️ using Gemini, Whisper, Google Gemini Embeddings, and Pinecone.")

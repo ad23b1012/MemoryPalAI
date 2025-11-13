@@ -1,1 +1,1 @@
-Artificial Intelligence involves Machine Learning, Deep Learning, and Neural Networks.
+Artificial Intelligence enables machines to think and learn like humans.
