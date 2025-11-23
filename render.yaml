@@ -22,6 +22,8 @@ services:
           property: host
       - key: POSTGRES_PORT
         value: 5432
+      - key: PORT
+        value: 8501
       - key: GOOGLE_API_KEY
         sync: false
       - key: PINECONE_API_KEY
