@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: memorypal-app
+    runtime: docker
+    plan: free
+    envVars:
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: memorypal-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: memorypal-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: memorypal-db
+          property: database
+      - key: POSTGRES_HOST
+        fromDatabase:
+          name: memorypal-db
+          property: host
+      - key: POSTGRES_PORT
+        value: 5432
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: PINECONE_API_KEY
+        sync: false
+      - key: PINECONE_INDEX_HOST
+        sync: false
+
+databases:
+  - name: memorypal-db
+    databaseName: memorypal
+    user: postgres
+    plan: free
