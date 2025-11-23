@@ -32,5 +32,5 @@ services:
 databases:
   - name: memorypal-db
     databaseName: memorypal
-    user: postgres
+    user: memorypal_user
     plan: free
