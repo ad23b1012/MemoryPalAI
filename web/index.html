@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en" class="dark scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script>
+    // Automatically redirect from restricted 0.0.0.0 to localhost for Chrome PNA compatibility
+    if (window.location.hostname === "0.0.0.0") {
+      window.location.replace(window.location.href.replace("0.0.0.0", "localhost"));
+    }
+  </script>
+  <title>MemoryPal Agent — Autonomous Cognitive Learning OS</title>
+  <link rel="icon" type="image/png" href="/assets/icon.png">
+  <link rel="apple-touch-icon" href="/assets/icon.png">
+  
+  <!-- Modern Typography: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Display"', '"SF Pro Text"', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"SF Mono"', '"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            dark: {
+              950: '#030712',
+              900: '#0b0f19',
+              850: '#0f172a',
+              800: '#1e293b',
+              700: '#334155',
+            },
+            primary: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            },
+            accent: {
+              cyan: '#06b6d4',
+              violet: '#8b5cf6',
+              emerald: '#10b981',
+              amber: '#f59e0b',
+              rose: '#f43f5e',
+            }
+          },
+          animation: {
+            'glow-pulse': 'glow 4s ease-in-out infinite alternate',
+            'float': 'float 6s ease-in-out infinite',
+            'spin-slow': 'spin 12s linear infinite',
+          },
+          keyframes: {
+            glow: {
+              '0%': { opacity: '0.3', transform: 'scale(1)' },
+              '100%': { opacity: '0.6', transform: 'scale(1.05)' },
+            },
+            float: {
+              '0%, 100%': { transform: 'translateY(0px)' },
+              '50%': { transform: 'translateY(-6px)' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body {
+      background-color: #060919;
+      background-image: 
+        radial-gradient(at 0% 10%, rgba(6, 182, 212, 0.32) 0px, transparent 55%),
+        radial-gradient(at 100% 5%, rgba(99, 102, 241, 0.38) 0px, transparent 55%),
+        radial-gradient(at 85% 85%, rgba(217, 70, 239, 0.28) 0px, transparent 50%),
+        radial-gradient(at 10% 90%, rgba(20, 184, 166, 0.34) 0px, transparent 50%),
+        radial-gradient(at 50% 50%, rgba(59, 130, 246, 0.22) 0px, transparent 65%);
+      background-attachment: fixed;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #030712;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+
+    /* Ambient Spotlight & Grid Pattern */
+    .bg-grid-pattern {
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+    }
+
+    .spotlight-radial {
+      background: radial-gradient(circle 600px at 50% -100px, rgba(99, 102, 241, 0.22), transparent 70%);
+    }
+
+    /* Glassmorphism Classes */
+    .glass-nav {
+      background: rgba(3, 7, 18, 0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .glass-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%), rgba(15, 23, 42, 0.22);
+      backdrop-filter: blur(40px) saturate(230%) brightness(115%);
+      -webkit-backdrop-filter: blur(40px) saturate(230%) brightness(115%);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-top: 1.5px solid rgba(255, 255, 255, 0.60);
+      border-left: 1.2px solid rgba(255, 255, 255, 0.35);
+      box-shadow: 
+        inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.50),
+        inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08),
+        0 24px 60px -12px rgba(0, 0, 0, 0.65),
+        0 0 45px -10px rgba(6, 182, 212, 0.25);
+      border-radius: 28px;
+    }
+
+    .glass-card-hover {
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(99, 102, 241, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 16px 36px -10px rgba(99, 102, 241, 0.18);
+    }
+
+    /* Shimmer button animation */
+    .shimmer-btn {
+      position: relative;
+      overflow: hidden;
+    }
+    .shimmer-btn::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        60deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.12) 50%,
+        transparent 100%
+      );
+      transform: rotate(30deg) translateX(-100%);
+      transition: transform 0.6s ease;
+    }
+    .shimmer-btn:hover::after {
+      transform: rotate(30deg) translateX(100%);
+    }
+  </style>
+
+  <!-- High-Performance ES Modules: React 18 & HTM (Zero in-browser Babel lag) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "react": "https://esm.sh/react@18.3.1",
+      "react-dom/client": "https://esm.sh/react-dom@18.3.1/client",
+      "htm": "https://esm.sh/htm@3.1.1"
+    }
+  }
+  </script>
+</head>
+
+<body class="bg-[#030712] text-slate-100 font-sans antialiased selection:bg-indigo-500/30 selection:text-indigo-200 min-h-screen overflow-x-hidden">
+  <div id="root"></div>
+
+  <!-- Lightning-Fast Production React App Script (Zero Babel, Zero Compilation Lag) -->
+  <script type="module" src="/assets/app.js?v=2.0.6"></script>
+</body>
+</html>

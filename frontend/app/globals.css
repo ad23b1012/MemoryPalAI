@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 224 71% 4%;
+    --foreground: 210 40% 98%;
+  }
+
+  * {
+    border-color: rgba(255, 255, 255, 0.12);
+  }
+
+  body {
+    background-color: #060919;
+    color: #f8fafc;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Plus Jakarta Sans", "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Plus Jakarta Sans", system-ui, sans-serif;
+    letter-spacing: -0.035em;
+    font-weight: 800;
+  }
+}
+
+/* Custom Sleek Glass Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  backdrop-filter: blur(10px);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(34, 180, 173, 0.45);
+}
+
+/* ========================================================
+   LIVING FLUID AURORA CANVAS (VisionOS Cosmic Background)
+   ======================================================== */
+.liquid-aurora-bg {
+  background-color: #060919;
+  background-image: 
+    radial-gradient(at 0% 10%, rgba(6, 182, 212, 0.32) 0px, transparent 55%),
+    radial-gradient(at 100% 5%, rgba(99, 102, 241, 0.38) 0px, transparent 55%),
+    radial-gradient(at 85% 85%, rgba(217, 70, 239, 0.28) 0px, transparent 50%),
+    radial-gradient(at 10% 90%, rgba(20, 184, 166, 0.34) 0px, transparent 50%),
+    radial-gradient(at 50% 50%, rgba(59, 130, 246, 0.22) 0px, transparent 65%);
+  background-attachment: fixed;
+}
+
+/* Ambient Subtle Micro-Grid Overlay */
+.liquid-grid-overlay {
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* ========================================================
+   DYNAMIC FLOATING LIQUID LIGHT SPHERES
+   ======================================================== */
+.liquid-orb-cyan {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(6, 182, 212, 0.42) 0%, rgba(20, 184, 166, 0.25) 40%, transparent 70%);
+  filter: blur(85px);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+.liquid-orb-violet {
+  position: absolute;
+  width: 800px;
+  height: 800px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.38) 0%, rgba(139, 92, 246, 0.22) 45%, transparent 70%);
+  filter: blur(95px);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+.liquid-orb-magenta {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.32) 0%, rgba(168, 85, 247, 0.2) 45%, transparent 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+.liquid-orb-emerald {
+  position: absolute;
+  width: 650px;
+  height: 650px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.35) 0%, rgba(6, 182, 212, 0.18) 50%, transparent 70%);
+  filter: blur(90px);
+  pointer-events: none;
+  z-index: 0;
+  will-change: transform;
+}
+
+/* ========================================================
+   TRUE APPLE VISIONOS LIQUID GLASS CARD (Ultra-Transparent)
+   ======================================================== */
+.liquid-glass-card,
+.apple-glass-card,
+.glass-card {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.02) 100%),
+              rgba(15, 23, 42, 0.22); /* Ultra-transparent! */
+  backdrop-filter: blur(40px) saturate(230%) brightness(115%);
+  -webkit-backdrop-filter: blur(40px) saturate(230%) brightness(115%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.60); /* Apple specular reflection */
+  border-left: 1.2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.50),
+    inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 25px 0 rgba(255, 255, 255, 0.03),
+    0 24px 60px -12px rgba(0, 0, 0, 0.65),
+    0 0 45px -10px rgba(6, 182, 212, 0.25);
+  border-radius: 30px;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-glass-card:hover,
+.apple-glass-card:hover,
+.glass-card:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%),
+              rgba(15, 23, 42, 0.16);
+  border-color: rgba(255, 255, 255, 0.28);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.80);
+  box-shadow: 
+    inset 0 2px 1.5px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -1px 1px 0 rgba(255, 255, 255, 0.12),
+    0 32px 75px -12px rgba(0, 0, 0, 0.75),
+    0 0 60px -5px rgba(6, 182, 212, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ========================================================
+   FLOATING VISIONOS LIQUID CAPSULE DOCK (Header & Nav)
+   ======================================================== */
+.liquid-glass-dock,
+.apple-dock,
+.glass-nav {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.04) 100%),
+              rgba(10, 16, 36, 0.30);
+  backdrop-filter: blur(48px) saturate(240%) brightness(120%);
+  -webkit-backdrop-filter: blur(48px) saturate(240%) brightness(120%);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.70);
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.55),
+    0 16px 45px -8px rgba(0, 0, 0, 0.7),
+    0 0 35px -5px rgba(20, 184, 166, 0.3);
+  border-radius: 9999px;
+}
+
+/* Active Segment Pill */
+.liquid-active-pill,
+.apple-active-pill {
+  background: linear-gradient(135deg, rgba(20, 184, 166, 0.60) 0%, rgba(99, 102, 241, 0.55) 100%),
+              rgba(255, 255, 255, 0.20);
+  backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.50);
+  border-top: 1.2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    inset 0 1.5px 1px 0 rgba(255, 255, 255, 0.75),
+    0 6px 20px -2px rgba(20, 184, 166, 0.55);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ========================================================
+   TACTILE LIQUID BUTTON (Glossy Specular Top Sheen)
+   ======================================================== */
+.liquid-button-primary,
+.apple-button-primary {
+  background: linear-gradient(135deg, #06b6d4 0%, #14b8a6 45%, #6366f1 100%);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-top: 1.5px solid rgba(255, 255, 255, 0.80);
+  box-shadow: 
+    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.75),
+    0 10px 30px -5px rgba(6, 182, 212, 0.60),
+    0 0 20px -3px rgba(99, 102, 241, 0.40);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-button-primary:hover,
+.apple-button-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 
+    inset 0 2px 2px 0 rgba(255, 255, 255, 0.90),
+    0 16px 40px -5px rgba(6, 182, 212, 0.80),
+    0 0 30px -3px rgba(99, 102, 241, 0.55);
+}
+
+.liquid-button-primary:active,
+.apple-button-primary:active {
+  transform: translateY(0.5px) scale(0.98);
+  box-shadow: 
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.45),
+    0 4px 15px -2px rgba(6, 182, 212, 0.45);
+}
+
+/* ========================================================
+   LIQUID GLASS INSET INPUT (Omnibar Search)
+   ======================================================== */
+.liquid-glass-input,
+.apple-glass-input {
+  background: rgba(8, 14, 30, 0.35);
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-top: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 
+    inset 0 2px 4px 0 rgba(0, 0, 0, 0.35),
+    inset 0 0 1px 1px rgba(255, 255, 255, 0.10);
+  border-radius: 20px;
+  color: #ffffff;
+  transition: all 0.25s ease;
+}
+
+.liquid-glass-input:focus,
+.apple-glass-input:focus {
+  outline: none;
+  background: rgba(8, 14, 30, 0.55);
+  border-color: rgba(45, 212, 191, 0.75);
+  border-top-color: rgba(255, 255, 255, 0.70);
+  box-shadow: 
+    inset 0 2px 4px 0 rgba(0, 0, 0, 0.35),
+    0 0 0 4px rgba(20, 184, 166, 0.25),
+    0 0 30px -4px rgba(20, 184, 166, 0.45);
+}
+
+/* ========================================================
+   HOLOGRAPHIC LIQUID LENS (Brain Portal Emblem Pedestal)
+   ======================================================== */
+.liquid-lens {
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.22) 0%, rgba(20, 184, 166, 0.25) 45%, rgba(99, 102, 241, 0.2) 80%, rgba(255, 255, 255, 0.05) 100%),
+              rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(40px) saturate(240%);
+  -webkit-backdrop-filter: blur(40px) saturate(240%);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-top: 2px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 
+    inset 0 2px 4px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -2px 4px 0 rgba(0, 0, 0, 0.3),
+    0 30px 80px -15px rgba(6, 182, 212, 0.5),
+    0 0 50px -5px rgba(99, 102, 241, 0.4);
+  border-radius: 9999px;
+}

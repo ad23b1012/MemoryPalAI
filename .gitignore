@@ -4,11 +4,27 @@ __pycache__/
 
 # Environment & Sessions
 .env
+.env*.local
 venv/
 .venv/
 frontend/.memorypal_session.json
 .memorypal_session.json
 
-# Local Databases
+# Local Databases & State
 chroma_db/
 *.db
+
+# Frontend (Next.js & Node)
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+node_modules/
+.next/
+
+# OS
+.DS_Store
+Thumbs.db

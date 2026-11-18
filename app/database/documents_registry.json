@@ -1,0 +1,30 @@
+{
+  "Sample_Test.pdf": {
+    "document_id": "Sample_Test.pdf",
+    "topic": "Cognitive Neurobiology",
+    "chunks": 4,
+    "indexed_at": "2026-11-18 11:38:49",
+    "style": "Technical",
+    "tone": "Academic",
+    "tags": [
+      "Neuroscience",
+      "Memory",
+      "Synapses"
+    ],
+    "snippet": "Neurons communicate via synaptic transmission."
+  },
+  "08_AgenticAI__What_is_Agentic_AI_.pdf": {
+    "document_id": "08_AgenticAI__What_is_Agentic_AI_.pdf",
+    "topic": "Agentic Ai",
+    "chunks": 26,
+    "indexed_at": "2026-11-18 11:42:00",
+    "style": "Explanatory",
+    "tone": "Academic",
+    "tags": [
+      "Agentic AI",
+      "Autonomous Systems",
+      "Artificial Intelligence"
+    ],
+    "snippet": "What is Agentic AI?\nDr. Sunil Saumya\nDept of Data Science & Artificial Intelligence\nIndian Institute of Information Technology Dharwad\nsunilsaumya @iiitdwd.ac.in\nSeptember 4, 2025\nDr. Sunil Saumya\n(IIIT Dharwad)\nAgentic AI\nSeptember 4, 2025\n1 / 35\n\n\nWhat is Agentic AI?\nAgentic AI is an autonomous system designed to achieve a specific, high-level\ngoal. Unlike a reactive chatbot, it is a proactive entity that can operate\nindependently with minimal human inetervention.\nIts core capabilities include:\nPlanning: Breaks down a complex goal into a series of smaller steps.\nReasoning: Determines the best course of action and the tools needed.\nMemory: Retains context from past actions and conversations.\nTool Use: Interacts with external systems (APIs, databases, etc.).\nAct\nPlan\nSense\nReflect\nPerceives Environment\nForms Plan\nPerforms Action\nEvaluates Outcome\nDr. Sunil Saumya\n(IIIT Dharwad)\nAgentic AI\nSeptember 4, 2025\n2 / 35\n\n\nThe Agentic AI Loop: A Travel Example\nTravel Agentic AI\nSENSEUser reque"
+  }
+}
