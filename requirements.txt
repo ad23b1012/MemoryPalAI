@@ -7,9 +7,7 @@ fastapi>=0.110.0
 uvicorn>=0.28.0
 python-multipart>=0.0.9
 
-# --- Frontend & UI ---
-streamlit>=1.35.0
-pyvis>=0.3.2
+# --- Network & Knowledge Graph ---
 networkx>=3.0
 
 # --- AI Frameworks & Orchestration ---
