@@ -1,220 +1,206 @@
-# 🧠 MemoryPalAI — Intelligent Knowledge Workspace (v2.0)
-### Next-Gen Agentic AI Tutor • Style-Aware Grounded RAG • Adaptive Quiz Arena • Spaced Repetition Companion
+# 🧠 MemoryPalAI — Autonomous Cognitive Learning OS (v2.0)
+### Agentic AI Multi-Agent Architecture • Grounded Citation RAG • Adaptive Quiz Arena • SuperMemo SM-2 Spaced Repetition
 
 [![Python 3.11](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://python.org)
-[![Streamlit](https://img.shields.io/badge/Streamlit-1.35+-FF4B4B?logo=streamlit&logoColor=white)](https://streamlit.io)
-[![Gemini](https://img.shields.io/badge/Google-Gemini_Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
-[![Pinecone](https://img.shields.io/badge/Pinecone-Vector_DB-000000?logo=pinecone&logoColor=white)](https://pinecone.io)
-[![ChromaDB](https://img.shields.io/badge/ChromaDB-Persistent_Fallback-orange)](https://trychroma.com)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15.1_App_Router-black?logo=next.js&logoColor=white)](https://nextjs.org)
+[![React 19](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Gemini 3.8 Flash](https://img.shields.io/badge/Google-Gemini_3.8_Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev)
+[![Pinecone](https://img.shields.io/badge/Pinecone-Vector_Database-000000?logo=pinecone&logoColor=white)](https://pinecone.io)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Supabase_Enterprise-4169E1?logo=postgresql&logoColor=white)](https://supabase.com)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://docker.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
+## 🌐 Live Production Deployments
+
+* **Backend Core Engine:** [https://memorypal-app.onrender.com](https://memorypal-app.onrender.com) *(Mirror: [https://memorypalai-1-71yi.onrender.com](https://memorypalai-1-71yi.onrender.com))*
+* **Interactive OpenAPI Docs:** [https://memorypal-app.onrender.com/docs](https://memorypal-app.onrender.com/docs)
+* **System Telemetry & Health:** [https://memorypal-app.onrender.com/api/health](https://memorypal-app.onrender.com/api/health)
+* **Frontend Web Application:** Deployed via Vercel with edge-rewrites to Render backend.
+
+---
+
 ## 🚀 Overview
 
-**MemoryPalAI** is a production-grade Agentic AI Knowledge Workspace and Personal Learning Companion. It transforms unstructured study materials—such as academic PDFs, lecture audio, DOCX notes, and web articles—into an interactive, grounded learning ecosystem.
+**MemoryPalAI** is a production-grade Agentic AI Knowledge Workspace and Autonomous Learning Companion. It transforms unstructured study materials—such as academic PDFs, lecture recordings, research notes, and web publications—into an interconnected, verifiable cognitive learning ecosystem.
 
-MemoryPalAI autonomously:
-1. **Ingests & Analyzes:** Extracts text, detects pedagogical style, tone, topics, and conceptual tags.
-2. **Embeds & Indexes:** Uses Gemini `text-embedding-004` with a zero-crash **Unified Vector Store** (Pinecone cloud with automatic persistent ChromaDB fallback).
-3. **Retrieves & Grounds:** Delivers strictly grounded answers with citations or general knowledge fallback.
-4. **Architects Roadmaps:** Synthesizes customized 3-phase mastery study plans with curated YouTube resources.
-5. **Generates Quizzes:** Designs conceptual multiple-choice questions (MCQs) and evaluates student answers.
-6. **Auto-Revises:** Detects weak concepts (<70% score) to synthesize concise revision packs and active recall flashcards.
-7. **Schedules Spaced Repetition:** Calculates SuperMemo SM-2 review intervals and tracks mastery memory across topics.
-8. **Visualizes Knowledge:** Maps entities and relationships into an interactive physics-driven concept graph.
+The system orchestrates specialized autonomous agents:
+1. **Multimodal Ingestion Agent:** Ingests PDFs (PyMuPDF/pypdf), Word documents (python-docx), plain text/Markdown, web articles (BeautifulSoup), and audio lectures (Whisper MP3/WAV/M4A).
+2. **Pedagogical Style & Taxonomy Agent:** Analyzes pedagogical tone, text structure, topic domains, and semantic key concepts.
+3. **High-Dimensional Vector Indexer:** Generates 768-dimensional multimodal embeddings using Google `gemini-embedding-2` and persists them in Pinecone Cloud with local ChromaDB fallback.
+4. **Grounded Synthesis & Citation Engine:** Synthesizes contextual answers strictly bounded by retrieved source chunks using Google `gemini-3.8-flash` with dual-key automatic failover.
+5. **Study Roadmap Planner:** Generates customized 3-phase mastery study plans with targeted conceptual milestones and curated YouTube technical resources.
+6. **Adaptive Quiz Arena:** Synthesizes document-grounded multiple-choice assessments, evaluates user answers with exact mathematical scoring, and provides step-by-step conceptual explanations.
+7. **Spaced Repetition Engine:** Implements the **SuperMemo SM-2** exponential decay algorithm to compute optimal review intervals (1, 2, 5, 10+ days) and track mastery retention over time.
+8. **Concept Graph Service:** Generates hierarchical entity-relationship graphs mapping subjects, concepts, and semantic tags.
 
 ---
 
 ## 🏗️ System Architecture
 
 ```
-                  ┌──────────────────────────────────────────────────┐
-                  │                   User Inputs                    │
-                  │   (PDF / DOCX / TXT / Audio MP3-WAV / Web URLs)  │
-                  └─────────────────────────┬────────────────────────┘
-                                            │
-                                            ▼
-                  ┌──────────────────────────────────────────────────┐
-                  │                 Ingestion Agent                  │
-                  │   Whisper Transcription • PyMuPDF • PyPDF        │
-                  └─────────────────────────┬────────────────────────┘
-                                            │
-                                            ▼
-                  ┌──────────────────────────────────────────────────┐
-                  │          Style & Concept Organizer Agent         │
-                  │  Style Detection (Explanatory/Technical/Example) │
-                  │  Tone (Formal/Friendly) • Recursive Chunker      │
-                  └─────────────────────────┬────────────────────────┘
-                                            │
-                                            ▼
-                  ┌──────────────────────────────────────────────────┐
-                  │               Embedding Service                  │
-                  │        Google Gemini text-embedding-004          │
-                  └─────────────────────────┬────────────────────────┘
-                                            │
-                                            ▼
-                  ┌──────────────────────────────────────────────────┐
-                  │              Unified Vector Store                │
-                  │   Pinecone (Serverless) ⇄ ChromaDB (Persistent)  │
-                  └─────────────────────────┬────────────────────────┘
-                                            │
-         ┌──────────────────────────────────┼─────────────────────────────────┐
-         ▼                                  ▼                                 ▼
-┌──────────────────┐              ┌──────────────────┐              ┌──────────────────┐
-│  Grounded RAG QA │              │ Interactive Graph│              │ Adaptive Quiz &  │
-│  & Study Roadmap │              │ (PyVis Physics)  │              │  Revision Deck   │
-└──────────────────┘              └──────────────────┘              └────────┬─────────┘
-                                                                             │
-                                                                             ▼
-                                                                    ┌──────────────────┐
-                                                                    │ Spaced Repetition│
-                                                                    │  (SM-2 Tracker)  │
-                                                                    └──────────────────┘
+                          ┌────────────────────────────────────────────────────────┐
+                          │                      Client Tier                       │
+                          │   Next.js 15 (App Router, React 19, TypeScript)        │
+                          └───────────────────────────┬────────────────────────────┘
+                                                      │  /api/* (Reverse Proxy / CORS)
+                                                      ▼
+                          ┌────────────────────────────────────────────────────────┐
+                          │               FastAPI Asynchronous Core                │
+                          │      Uvicorn ASGI • Pydantic v2 • Connection Pool      │
+                          └───────────────────────────┬────────────────────────────┘
+                                                      │
+         ┌────────────────────────────────────────────┼────────────────────────────────────────────┐
+         ▼                                            ▼                                            ▼
+┌──────────────────┐                       ┌──────────────────┐                       ┌──────────────────┐
+│ Ingestion Agent  │                       │  LLM Service     │                       │ Unified Vector   │
+│ Whisper Audio    │                       │ Gemini 3.8 Flash │                       │ Store & Relational│
+│ PyMuPDF / docx   │                       │ Multi-Key Fallover│                      │ Pinecone Cloud   │
+│ BeautifulSoup    │                       │ gemini-embed-2   │                       │ Supabase Postgres│
+└────────┬─────────┘                       └────────┬─────────┘                       └────────┬─────────┘
+         │                                          │                                          │
+         └──────────────────────────────────────────┼──────────────────────────────────────────┘
+                                                    │
+                   ┌────────────────────────────────┴────────────────────────────────┐
+                   ▼                                                                 ▼
+        ┌───────────────────────┐                                         ┌───────────────────────┐
+        │  Cognitive Tutor &    │                                         │   Adaptive Quiz &     │
+        │  Grounded Citations   │                                         │   SuperMemo SM-2      │
+        └───────────────────────┘                                         └───────────────────────┘
 ```
 
 ---
 
-## 🌟 Key Features & Improvements (v2.0)
+## 🌟 Core Technical Capabilities
 
-| Module | Features & Capabilities |
+| Module | Technical Implementation |
 | :--- | :--- |
-| **🎨 Futuristic Glassmorphic UI** | Responsive dark glassmorphism theme with gradient telemetry badges, animated metric cards, interactive radio choices, and clean tab navigation. |
-| **🛡️ Zero-Crash Architecture** | Eliminates fatal top-level exits. Gracefully falls back to ChromaDB if Pinecone keys are missing, and to SQLite if PostgreSQL is absent. |
-| **📥 Multimodal Ingestion** | Ingests PDF (PyMuPDF), DOCX (python-docx), TXT, Markdown, Web URLs, and audio lectures (MP3, WAV, M4A) with on-demand Whisper transcription and preview audio player. |
-| **🔍 Transparent Grounded RAG** | Inspect retrieved chunks, similarity metrics, and source document metadata directly in the conversation drawer. |
-| **🗺️ 3-Phase Mastery Roadmap** | Generates Foundations, Deep Dive, and Advanced Mastery milestones with direct YouTube tutorial search links. |
-| **🎯 Adaptive Quiz Arena** | MCQ quizzes with customized question lengths, formatted option selections, and detailed pedagogical evaluations. |
-| **🔁 Smart Auto-Revision** | Automatically triggers when a quiz score is below 70%, synthesizing key takeaways, target video lessons, and self-test flashcards. |
-| **📈 Spaced Repetition Tracker** | SuperMemo SM-2 algorithm calculates next review intervals (1, 2, 5, 10+ days) and alerts you on due topics. |
-| **🕸️ Interactive Concept Graph** | Physics-based interactive concept network with color-coded nodes for Topics, Concepts, Phrases, and Tags. |
-| **🐳 Production Server Ready** | Optimized Dockerfile with dynamic `$PORT` support, docker-compose production bundle with Nginx reverse proxy, and WebSocket stream handling. |
+| **⚡ Next.js 15 App Router** | Full-stack TypeScript architecture on React 19 with modular client components and centralized `/lib/api.ts` typed fetch client. |
+| **🚀 FastAPI Asynchronous Engine** | High-throughput async REST endpoints with strict Pydantic v2 schema validation, CORS security headers, and automated OpenAPI documentation. |
+| **🧠 Gemini 3.8 Flash Core** | Uses the official `google.genai` SDK with automatic quota and rate-limit multi-key failover (`GOOGLE_API_KEY` ➔ `GOOGLE_API_KEY_FALLBACK`). |
+| **📐 Gemini Embedding 2** | Generates 768-dimensional dense vector embeddings with Matryoshka Representation Learning (MRL). |
+| **🌲 Distributed Vector Network** | Pinecone Serverless cloud indexing with cosine similarity scoring, namespace isolation, and graceful fallback to persistent local ChromaDB. |
+| **🐘 Enterprise Relational Core** | PostgreSQL persistence via Supabase connection pooling with fallback to SQLite for local development. |
+| **🎯 Document-Grounded Quiz Arena** | Dynamically extracts chunks from ingested documents to synthesize questions testing specific course materials, calculating true percentage scores. |
+| **📈 SuperMemo SM-2 Spaced Repetition** | Computes exponential memory retention curves, Easiness Factors ($EF \ge 1.3$), repetition counts, and scheduled review dates. |
+| **🕸️ Knowledge Graph Extraction** | Entity-relationship graph generation mapping document subjects, extracted concepts, and semantic connections. |
+| **🐳 Containerized Orchestration** | Multi-stage production `Dockerfile` with dynamic `$PORT` binding, pre-configured for Render, Railway, Fly.io, and Docker Compose. |
 
 ---
 
 ## ⚙️ Environment Configuration
 
-Copy `.env.example` to `.env` and configure your credentials:
+Create a `.env` file in the project root:
 
 ```bash
 cp .env.example .env
 ```
 
-| Variable | Description | Default / Example |
+| Environment Variable | Description | Default / Example |
 | :--- | :--- | :--- |
-| `GOOGLE_API_KEY` | **Required for AI** — Google Gemini API key ([Get Key](https://aistudio.google.com/)) | `AIzaSy...` |
-| `GEMINI_MODEL` | Gemini LLM model | `gemini-1.5-flash` *(supports `gemini-2.0-flash`, `gemini-1.5-pro`)* |
-| `PINECONE_API_KEY` | Pinecone Cloud API Key *(optional; falls back to ChromaDB)* | `pcsk_...` |
-| `PINECONE_INDEX_NAME` | Pinecone index name | `memorypalai` |
-| `PINECONE_NAMESPACE` | Pinecone namespace | `memorypal` |
-| `VECTOR_BACKEND` | `auto`, `pinecone`, or `chroma` | `auto` |
-| `POSTGRES_USER` | PostgreSQL user *(optional; falls back to SQLite)* | `memorypal_user` |
-| `POSTGRES_PASSWORD` | PostgreSQL password | `memorypal_pass` |
-| `POSTGRES_DB` | PostgreSQL database name | `memorypal` |
-| `POSTGRES_HOST` | PostgreSQL host | `postgres_db` *(or `localhost`)* |
-| `PORT` | Web server port | `8501` *(or cloud `$PORT`)* |
+| `GOOGLE_API_KEY` | Primary Google Gemini API Key | `AIzaSy...` |
+| `GOOGLE_API_KEY_FALLBACK` | Secondary Gemini API Key for automatic failover | `AIzaSy...` |
+| `GEMINI_MODEL` | Gemini LLM Model | `gemini-3.8-flash` |
+| `EMBEDDING_MODEL` | Text & Multimodal Embedding Model | `gemini-embedding-2` |
+| `PINECONE_API_KEY` | Pinecone Cloud Vector Store API Key | `pcsk_...` |
+| `PINECONE_INDEX_NAME` | Target Pinecone Vector Index | `memorypalai` |
+| `PINECONE_NAMESPACE` | Vector namespace partition | `memorypal` |
+| `VECTOR_BACKEND` | Vector storage provider (`auto`, `pinecone`, `chroma`) | `auto` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://postgres:...@host:5432/postgres` |
+| `PORT` | Local FastAPI server port | `8501` |
+| `NEXT_PUBLIC_BACKEND_URL` | Target backend URL for Next.js API proxy | `https://memorypal-app.onrender.com` |
 
 ---
 
-## 🚀 Quickstart Guide
+## 🚀 Local Development Setup
 
-### 1. Local Python Setup
+### 1. Prerequisites
+* **Python 3.11+**
+* **Node.js 20+** and **npm 10+**
+
+### 2. Universal One-Command Startup
+The project includes a root startup script that concurrently runs both FastAPI and Next.js:
 
 ```bash
 # Clone the repository
 git clone https://github.com/ad23b1012/MemoryPalAI.git
 cd MemoryPalAI
 
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Run universal startup script
+./start.sh
+```
+
+---
+
+### 3. Manual Component Startup
+
+#### Backend Service (FastAPI):
+```bash
+# Setup Python virtual environment
+python3 -m venv .venv
+source .venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run system verification test
-python test.py
-
-# Launch Streamlit app
-streamlit run frontend/streamlit_app.py
+# Start FastAPI server
+python3 -m app.server
 ```
+*Backend active at: `http://localhost:8501`*
 
-Open your browser at `http://localhost:8501`.
+#### Frontend Service (Next.js 15):
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+npm install
+
+# Start Next.js development server
+npm run dev
+```
+*Frontend active at: `http://localhost:3000`*
 
 ---
 
-### 2. Docker & Docker Compose (Recommended for Production)
+## 📡 Core API Reference
 
-#### Local Development with Docker Compose:
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/health` | System telemetry, vector index metrics, and engine status |
+| `GET` | `/api/documents` | List indexed documents, topic clusters, and chunk counts |
+| `POST` | `/api/ingest` | Multipart upload (PDF, TXT, DOCX, Audio) or URL ingestion |
+| `DELETE` | `/api/documents/{doc_id}` | Deletes document chunks and vector records from index |
+| `POST` | `/api/query` | Grounded semantic search, evidence retrieval, and 3-phase roadmap |
+| `POST` | `/api/quiz/generate` | Generates document-grounded MCQ questions |
+| `POST` | `/api/quiz/evaluate` | Evaluates submitted answers, computes score, and updates SM-2 schedule |
+| `GET` | `/api/graph` | Extracts entity nodes and semantic relationship edges |
+| `GET` | `/api/analytics` | Returns SuperMemo SM-2 retention metrics and due review dates |
+
+---
+
+## 🐳 Docker Deployment
+
+### Local Docker Build:
 ```bash
-docker-compose up --build
-```
-This starts:
-- MemoryPalAI App at `http://localhost:8501`
-- PostgreSQL 16 at `localhost:5432`
+# Build production image
+docker build -t memorypal-backend .
 
-#### Full Production Stack (with Nginx Reverse Proxy):
+# Run container with dynamic port
+docker run -p 8501:8501 --env-file .env memorypal-backend
+```
+
+### Docker Compose Production Stack:
 ```bash
 docker-compose -f docker-compose.prod.yml up -d --build
 ```
-This runs:
-- **Nginx Reverse Proxy** at `http://localhost:80` (with WebSocket upgrade, 100MB upload limit, gzip compression)
-- **MemoryPalAI App Container**
-- **PostgreSQL 16 Database**
-
-To check logs or status:
-```bash
-docker-compose -f docker-compose.prod.yml logs -f
-```
 
 ---
 
-### 3. Deploying to Cloud Servers
+## 👥 Authors & License
 
-#### Deploy to Render:
-1. Connect this GitHub repository in [Render Dashboard](https://dashboard.render.com).
-2. Choose **Blueprint** deployment: Render will automatically detect `render.yaml`.
-3. Fill in your `GOOGLE_API_KEY` (and optional `PINECONE_API_KEY`) under Environment Variables.
-4. Render deploys the app and managed PostgreSQL automatically!
-
-#### Deploy to Railway / Fly.io / Cloud Run / VPS:
-MemoryPalAI includes native `$PORT` binding in its `Dockerfile` and `Procfile`.
-- **Railway:** Simply connect GitHub repo; Railway auto-detects `Dockerfile` and binds `$PORT`.
-- **VPS (Ubuntu/Debian):** Install Docker & Docker Compose, clone repository, run `docker-compose -f docker-compose.prod.yml up -d`.
-
----
-
-## 🧪 Verification & Testing
-
-Verify that all backend services, vector database, and AI pipelines are working:
-
-```bash
-python test.py
-```
-
-Expected output:
-```
-============================================================
-🧠 MemoryPalAI - System Health & Integration Check
-============================================================
-✅ Configuration loaded: MemoryPalAI v2.0.0
-   - Target Gemini Model: gemini-1.5-flash
-   - Target Vector Backend: auto
-   - Database URL Type: SQLite (Local Fallback)
-✅ Vector Store initialized successfully (Active Backend: chroma)
-✅ Relational Database tables verified/created successfully.
-✅ All Core Agents initialized successfully:
-   - IngestionAgent, QuizAgent, RevisionAgent, PlannerAgent, OrganizerAgent
-   - Spaced Repetition Engine: test interval = 5 days (Progressing Well)
-============================================================
-🎉 All systems operational! App is ready for local use and server deployment.
-============================================================
-```
-
----
-
-## 👥 Contributors & License
-
-- **Author:** Abhishek Buddiga & Izhaar Ahmed
-- **License:** MIT License. See [LICENSE](LICENSE) for details.
+* **Authors:** Abhishek Buddiga & Izhaar Ahmed
+* **License:** MIT License. See [LICENSE](LICENSE) for details.
