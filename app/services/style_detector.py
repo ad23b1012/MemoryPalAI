@@ -1,107 +1,86 @@
 # app/services/style_detector.py
 import re
 import json
-import os
-from typing import Dict
+import logging
+from typing import Dict, Any, List
 from app.services.llm_service import get_llm, generate_with_retry
 
-# small heuristic fallback if LLM parsing fails
-def _heuristic_style(text: str) -> Dict[str, str]:
+logger = logging.getLogger(__name__)
+
+
+def _heuristic_style(text: str) -> Dict[str, Any]:
     text = (text or "").strip()
-    subject = "Unknown"
+    subject = "General Topic"
     style = "Descriptive"
     tone = "Neutral"
-    tags = []
 
-    # Very naive heuristics
-    # Take first sentence/heading as subject candidate
     first_line = text.splitlines()[0] if text.splitlines() else text[:120]
     if len(first_line) > 5 and len(first_line.split()) < 12:
         subject = re.sub(r'[^A-Za-z0-9\s&\-]', '', first_line).strip()
 
-    # Determine style by content clues
-    if "definition" in text.lower() or "is defined" in text.lower():
+    t_lower = text.lower()
+    if "definition" in t_lower or "is defined as" in t_lower:
         style = "Explanatory"
-    elif "example" in text.lower() or "for example" in text.lower():
+    elif "example" in t_lower or "for instance" in t_lower:
         style = "Example-driven"
-    elif "algorithm" in text.lower() or "procedure" in text.lower():
+    elif "algorithm" in t_lower or "code" in t_lower or "architecture" in t_lower:
         style = "Technical"
 
-    # tone
-    if "please" in text.lower() or "let's" in text.lower():
+    if "please" in t_lower or "let's" in t_lower:
         tone = "Friendly"
-    elif "therefore" in text.lower() or "hence" in text.lower():
+    elif "therefore" in t_lower or "hence" in t_lower or "furthermore" in t_lower:
         tone = "Formal"
 
-    # tags by frequent nouns - simple word frequency
-    words = re.findall(r"\b[A-Za-z]{4,}\b", text.lower())
+    words = re.findall(r"\b[A-Za-z]{4,}\b", t_lower)
     freq = {}
     for w in words:
-        freq[w] = freq.get(w, 0) + 1
+        if w not in ("with", "this", "that", "from", "have", "more", "which", "will"):
+            freq[w] = freq.get(w, 0) + 1
     sorted_words = sorted(freq.items(), key=lambda x: -x[1])
-    tags = [w for w, c in sorted_words[:6]]
+    tags = [w.capitalize() for w, _ in sorted_words[:5]]
 
-    return {"subject": subject or "Unknown", "style": style, "tone": tone, "tags": tags}
+    return {"subject": subject or "General", "style": style, "tone": tone, "tags": tags}
 
 
-def detect_style_from_text(text: str) -> Dict[str, object]:
+def detect_style_from_text(text: str) -> Dict[str, Any]:
     """
-    Use LLM to extract subject, style, tone, and tags for a document chunk.
-    Returns dict: {subject, style, tone, tags}
-    Falls back to heuristics if LLM fails.
+    Extracts subject, style, tone, and tags for a document chunk using LLM,
+    falling back to heuristic extraction on failure.
     """
     if not text or not text.strip():
-        return {"subject": "Unknown", "style": "Unknown", "tone": "Neutral", "tags": []}
+        return {"subject": "General", "style": "Descriptive", "tone": "Neutral", "tags": []}
 
-    llm = None
-    try:
-        llm = get_llm("gemini-2.5-flash")
-    except Exception:
-        llm = None
+    llm = get_llm()
+    if not llm:
+        return _heuristic_style(text)
 
     prompt = f"""
-You are an assistant that extracts a concise JSON summary about a document chunk.
-Return ONLY a valid JSON object with keys: subject, style, tone, tags (tags is a list of short keywords).
+Analyze this document excerpt and return a concise JSON object:
+{{
+  "subject": "Core topic name (2-5 words)",
+  "style": "One of: Descriptive, Explanatory, Example-driven, Technical, Narrative, Conversational",
+  "tone": "One of: Neutral, Formal, Friendly, Academic",
+  "tags": ["tag1", "tag2", "tag3"]
+}}
 
-Analyze the following text and return JSON:
-
-TEXT_START
-{text[:2500]}
-TEXT_END
-
-Subject should be a short phrase (2-6 words).
-Style should be one of: Descriptive, Explanatory, Example-driven, Technical, Narrative, Conversational, Unknown.
-Tone should be one of: Neutral, Formal, Friendly, Didactic, Urgent, Unknown.
-Tags should be 3-6 short keywords relevant to the text.
-
-Output EXACTLY valid JSON.
+Return ONLY valid JSON.
+Excerpt:
+{text[:2000]}
 """
-    if llm:
-        try:
-            resp = generate_with_retry(llm, prompt, retries=2)
-            if not resp:
-                raise RuntimeError("Empty LLM response")
-            # try to extract JSON block
-            # remove fenced code blocks
-            t = re.sub(r"```(?:json)?", "", resp, flags=re.IGNORECASE).strip()
-            start = t.find("{")
-            end = t.rfind("}")
-            if start != -1 and end != -1 and end > start:
-                j = t[start:end+1]
-            else:
-                j = t
-            data = json.loads(j)
-            # normalize
-            subject = data.get("subject", "Unknown")
-            style = data.get("style", "Unknown")
-            tone = data.get("tone", "Neutral")
-            tags = data.get("tags", []) or []
-            if not isinstance(tags, list):
-                tags = [str(tags)]
-            return {"subject": subject, "style": style, "tone": tone, "tags": tags}
-        except Exception:
-            # fall through to heuristic
-            pass
+    try:
+        resp = generate_with_retry(llm, prompt, retries=1)
+        clean_resp = re.sub(r"```(?:json)?", "", resp, flags=re.IGNORECASE).strip()
+        start = clean_resp.find("{")
+        end = clean_resp.rfind("}")
+        if start != -1 and end != -1:
+            data = json.loads(clean_resp[start:end+1])
+            return {
+                "subject": data.get("subject", "General"),
+                "style": data.get("style", "Descriptive"),
+                "tone": data.get("tone", "Neutral"),
+                "tags": data.get("tags", []) if isinstance(data.get("tags"), list) else [],
+            }
+    except Exception as e:
+        logger.warning(f"LLM style detection failed ({e}). Falling back to heuristics.")
 
-    # heuristic fallback
     return _heuristic_style(text)

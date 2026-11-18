@@ -87,7 +87,7 @@ def build_memorypal_graph() -> CompiledStateGraph:
     organizer_agent = OrganizerAgent()
     retriever_agent = RetrieverAgent()
     planner_agent = PlannerAgent()
-    llm = get_llm("gemini-2.5-flash")
+    llm = get_llm()
 
     quiz_agent = QuizAgent() if QuizAgent else None
     revision_agent = RevisionAgent() if RevisionAgent else None

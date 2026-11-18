@@ -2,9 +2,13 @@
 __pycache__/
 *.pyc
 
-# Environment
+# Environment & Sessions
 .env
 venv/
+.venv/
+frontend/.memorypal_session.json
+.memorypal_session.json
 
-# VectorDB Data
+# Local Databases
 chroma_db/
+*.db

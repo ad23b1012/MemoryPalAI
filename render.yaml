@@ -3,7 +3,10 @@ services:
     name: memorypal-app
     runtime: docker
     plan: free
+    healthCheckPath: /api/health
     envVars:
+      - key: PORT
+        value: 10000
       - key: POSTGRES_USER
         fromDatabase:
           name: memorypal-db
@@ -22,14 +25,16 @@ services:
           property: host
       - key: POSTGRES_PORT
         value: 5432
-      - key: PORT
-        value: 8501
       - key: GOOGLE_API_KEY
         sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.8-flash
       - key: PINECONE_API_KEY
         sync: false
-      - key: PINECONE_INDEX_HOST
-        sync: false
+      - key: PINECONE_INDEX_NAME
+        value: memorypalai
+      - key: PINECONE_NAMESPACE
+        value: memorypal
 
 databases:
   - name: memorypal-db

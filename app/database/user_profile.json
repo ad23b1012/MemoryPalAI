@@ -7,9 +7,9 @@
       25.0,
       50.0,
       0.0,
-      "**Quiz Evaluation for \"Artificial Intelligence\"**\n\n**Correct and Incorrect Answers:**\n\n*   **Q1:** Correct (User answered B, which is correct)\n*   **Q2:** Correct (User answered C, which is correct)\n*   **Q3:** Incorrect (User answered C, the correct answer is B)\n*   **Q4:** Incorrect (User answered B, the correct answer is D)\n\n**Overall Score:** 2 out of 4 (50%)\n\n**Topics to Revise:**\n\n*   **Rationality in AI Agents:** Understanding that an agent is \"rational\" when it acts to maximize its expected performance measure given its percept sequence and knowledge.\n*   **Environment Types for AI Agents:** Specifically, the definition of a \"Fully Observable\" environment where the agent's sensors provide access to the complete state of the environment."
+      50.0
     ],
-    "avg_score": 25.0,
+    "avg_score": 29.2,
     "revisions": [
       "### Topic: Types of Artificial Intelligence\n**Explanation:** Artificial Intelligence is categorized by its capabilities: Narrow AI (Weak AI) performs specific tasks, Artificial General Intelligence (AGI) matches human cognitive abilities across various domains, and Artificial Superintelligence (ASI) surpasses human intelligence significantly.\n\n**YouTube:** https://www.youtube.com/results?search_query=types+of+AI+explained\n**Self-Check:** What type of AI is most common in today's applications?\n\n### Topic: The Turing Test\n**Explanation:** The Turing Test, proposed by Alan Turing, assesses a machine's ability to exhibit intelligent behavior indistinguishable from that of a human. A human evaluator converses with both a human and a machine, attempting to identify the machine.\n\n**YouTube:** https://www.youtube.com/results?search_query=Turing+Test+explained\n**Self-Check:** What is the main purpose of the Turing Test?\n\n### Topic: Core AI Subfields\n**Explanation:** AI comprises several key subfields, each with a distinct focus. Machine Learning enables systems to learn from data, Natural Language Processing (NLP) focuses on understanding and generating human language, and Computer Vision allows machines to interpret visual information.\n\n**YouTube:** https://www.youtube.com/results?search_query=AI+subfields+explained\n**Self-Check:** Which AI subfield would be central to developing a spam email filter?",
       "### Topic: Types of AI (Narrow AI, AGI, ASI)\n**Explanation:** AI can be categorized by its capabilities. Narrow AI (or Weak AI) excels at specific tasks, like playing chess or voice recognition. Artificial General Intelligence (AGI) possesses human-like cognitive abilities across various tasks, while Artificial Superintelligence (ASI) surpasses human intelligence in all aspects.\n\n**YouTube:** https://www.youtube.com/results?search_query=narrow+ai+vs+agi+vs+asi+explained  \n**Self-Check:** What is the key difference between Narrow AI and AGI?\n\n### Topic: Artificial General Intelligence (AGI)\n**Explanation:** AGI refers to AI systems that can understand, learn, and apply intelligence across a broad range of tasks, similar to human cognitive abilities. Unlike Narrow AI, which is specialized, AGI can generalize knowledge and adapt to new situations. It's often synonymous with \"Strong AI.\"\n\n**YouTube:** https://www.youtube.com/results?search_query=what+is+artificial+general+intelligence  \n**Self-Check:** Can current AI systems be considered AGI? Why or why not?\n\n### Topic: AI Winters\n**Explanation:** An \"AI winter\" refers to a period of reduced funding, interest, and research activity in the field of artificial intelligence. These periods typically follow cycles of over-optimistic predictions, significant hype, and subsequent failures by AI systems to meet those high expectations, leading to public and investor disillusionment.\n\n**YouTube:** https://www.youtube.com/results?search_query=history+of+ai+winters+explained  \n**Self-Check:** What typically causes an AI winter?",
@@ -53,5 +53,62 @@
     "revisions": [
       "### Topic: Definition of Deterministic Algorithms\n**Explanation:** A deterministic algorithm is characterized by always producing the exact same output when given the identical input. Its execution path and the sequence of operations are entirely predictable, meaning no external factors or random choices influence the final result. This ensures consistency and reproducibility across multiple runs.\n\n**YouTube:** https://www.youtube.com/results?search_query=deterministic+algorithm+explained\n**Self-Check:** What is the primary characteristic of an algorithm's output that defines it as deterministic?\n\n### Topic: Non-determinism in Concurrent/Parallel Systems\n**Explanation:** While an algorithm may be designed to be deterministic in principle, its implementation in a concurrent or parallel environment can introduce non-deterministic behavior. This often occurs due to race conditions, where the timing and order of operations from multiple threads accessing shared data can lead to variable or unpredictable outcomes for the same input. Such scenarios mean the algorithm might yield different valid results or even errors on different executions.\n\n**YouTube:** https://www.youtube.com/results?search_query=race+conditions+non-deterministic+algorithms\n**Self-Check:** How can concurrent access to a shared data structure lead to non-deterministic behavior in an otherwise deterministic algorithm?"
     ]
+  },
+  "general": {
+    "attempts": 1,
+    "score_history": [
+      75.0
+    ],
+    "avg_score": 75.0,
+    "last_score": 75.0,
+    "review_schedule": {
+      "interval_days": 5,
+      "new_streak": 1,
+      "status": "Progressing Well",
+      "next_review_date": "2026-11-22",
+      "timestamp": 1795370257
+    }
+  },
+  "Agentic AI": {
+    "attempts": 6,
+    "score_history": [
+      75.0,
+      100.0,
+      75.0,
+      100.0,
+      66.7,
+      33.3
+    ],
+    "avg_score": 75.0,
+    "last_score": 33.3,
+    "review_schedule": {
+      "interval_days": 1,
+      "new_streak": 0,
+      "status": "Needs Urgent Review",
+      "next_review_date": "2026-11-19",
+      "timestamp": 1795071615
+    },
+    "revisions": [
+      "",
+      ""
+    ]
+  },
+  "Agentic Ai": {
+    "attempts": 4,
+    "score_history": [
+      75.0,
+      75.0,
+      75.0,
+      100.0
+    ],
+    "avg_score": 81.2,
+    "last_score": 100.0,
+    "review_schedule": {
+      "interval_days": 19,
+      "new_streak": 4,
+      "status": "Mastered",
+      "next_review_date": "2026-12-07",
+      "timestamp": 1796627550
+    }
   }
 }

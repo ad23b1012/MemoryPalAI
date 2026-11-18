@@ -1,32 +1,42 @@
-import os
-from dotenv import load_dotenv
-
-load_dotenv()
+# config.py - Root re-export and backward compatibility layer
+from app.config import (
+    PROJECT_NAME,
+    VERSION,
+    DEBUG,
+    HOST,
+    PORT,
+    GOOGLE_API_KEY,
+    GEMINI_MODEL,
+    EMBEDDING_MODEL,
+    EMBEDDING_DIMENSION,
+    PINECONE_API_KEY,
+    PINECONE_INDEX_NAME,
+    PINECONE_NAMESPACE,
+    VECTOR_BACKEND,
+    CHROMA_PERSIST_DIR,
+    DATABASE_URL,
+    MAX_DOCUMENT_SIZE_MB,
+    CHUNK_SIZE,
+    CHUNK_OVERLAP,
+)
 
 class Settings:
-    # General
-    PROJECT_NAME: str = "MemoryPalAI"
-    DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
-    HOST: str = os.getenv("HOST", "0.0.0.0")
-    PORT: int = int(os.getenv("PORT", 10000))
-
-    # Vector DB
-    PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY")
-    PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "memorypalai")
-    VECTOR_DIMENSION: int = int(os.getenv("VECTOR_DIMENSION", 384))
-
-    # LLM Settings
-    GOOGLE_API_KEY: str = os.getenv("GOOGLE_API_KEY")
-    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY")
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4")  # can switch to Gemini/Grok
-
-    # Document settings
-    MAX_DOCUMENT_SIZE_MB: int = int(os.getenv("MAX_DOCUMENT_SIZE_MB", 20))
-    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1000))
-    CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 200))
-
-    # Security
-    API_KEY_AUTH_ENABLED: bool = os.getenv("API_KEY_AUTH_ENABLED", "False").lower() == "true"
-    API_KEYS: list[str] = os.getenv("API_KEYS", "").split(",") if os.getenv("API_KEYS") else []
+    PROJECT_NAME = PROJECT_NAME
+    VERSION = VERSION
+    DEBUG = DEBUG
+    HOST = HOST
+    PORT = PORT
+    GOOGLE_API_KEY = GOOGLE_API_KEY
+    GEMINI_MODEL = GEMINI_MODEL
+    EMBEDDING_MODEL = EMBEDDING_MODEL
+    VECTOR_DIMENSION = EMBEDDING_DIMENSION
+    PINECONE_API_KEY = PINECONE_API_KEY
+    PINECONE_INDEX_NAME = PINECONE_INDEX_NAME
+    PINECONE_NAMESPACE = PINECONE_NAMESPACE
+    VECTOR_BACKEND = VECTOR_BACKEND
+    DATABASE_URL = DATABASE_URL
+    MAX_DOCUMENT_SIZE_MB = MAX_DOCUMENT_SIZE_MB
+    CHUNK_SIZE = CHUNK_SIZE
+    CHUNK_OVERLAP = CHUNK_OVERLAP
 
 settings = Settings()
